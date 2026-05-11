@@ -8,7 +8,10 @@
   ],
   "scripts": {
     "prepare": "husky",
-    "lint": "lint-staged"
+    "lint": "lint-staged",
+    "build:contracts": "cd packages/contracts && forge build",
+    "sync:abi": "mkdir -p packages/frontend/src/abis && cp -r packages/contracts/out/* packages/frontend/src/abis/",
+    "dev": "npm run build:contracts && npm run sync:abi && cd packages/frontend && npm run dev"
   },
   "devDependencies": {
     "husky": "^9.0.11",
