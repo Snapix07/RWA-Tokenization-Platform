@@ -1,0 +1,54 @@
+name: CI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint Frontend
+        run: npx prettier --check 'packages/frontend/src/**/*.{js,ts,jsx,tsx}'
+
+      - name: Lint Contracts
+        working-directory: packages/contracts
+        run: |
+          forge fmt --check
+          npx solhint 'src/**/*.sol'
+
+      - name: Compile Contracts
+        working-directory: packages/contracts
+        run: forge build
+
+      - name: Run Tests
+        working-directory: packages/contracts
+        run: forge test -vvv
+
+      - name: Run Coverage
+        working-directory: packages/contracts
+        run: forge coverage
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.1
+        with:
+          target: packages/contracts
+          fail-on: "high,medium"
