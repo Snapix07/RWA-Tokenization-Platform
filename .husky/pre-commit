@@ -1,1 +1,2 @@
+export PATH="$HOME/.foundry/bin:$PATH"
 npx lint-staged
