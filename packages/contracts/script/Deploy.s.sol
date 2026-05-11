@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {Counter} from "../src/Counter.sol";
 
+/// @notice Main deployment script for the RWA Tokenization Platform.
+///         Contracts are added here incrementally as they are implemented.
 contract Deploy is Script {
-    string constant SALT_VERSION = "v1";
-
-    function run() external returns (Counter counter) {
-        bytes32 salt = keccak256(abi.encodePacked("rwa-platform.Counter.", SALT_VERSION));
-
+    function run() external {
         vm.startBroadcast();
-        counter = new Counter{salt: salt}();
+        // Contracts will be deployed here as they are implemented.
         vm.stopBroadcast();
 
-        console2.log("Counter deployed at:", address(counter));
+        console2.log("RWA Tokenization Platform deployment script - pending contracts.");
     }
 }
