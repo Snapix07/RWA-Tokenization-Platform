@@ -1,0 +1,108 @@
+specVersion: 0.0.5
+description: RWA Tokenization Platform — indexes asset onboarding, vault positions, AMM swaps, and DAO governance.
+repository: https://github.com/Snapix07/RWA-Tokenization-Platform
+
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  # ── Asset Factory ────────────────────────────────────────────────────────────
+  - kind: ethereum
+    name: AssetFactory
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      abi: AssetFactory
+      startBlock: 0 # UPDATE after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - AssetToken
+      abis:
+        - name: AssetFactory
+          file: ./abis/AssetFactory.json
+      eventHandlers:
+        - event: TokenDeployed(indexed bytes32,indexed address,bool)
+          handler: handleTokenDeployed
+      file: ./src/mappings.ts
+
+  # ── RWA Vault ────────────────────────────────────────────────────────────────
+  - kind: ethereum
+    name: RWAVault
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      abi: RWAVault
+      startBlock: 0 # UPDATE after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - VaultPosition
+      abis:
+        - name: RWAVault
+          file: ./abis/RWAVault.json
+      eventHandlers:
+        - event: Deposit(indexed address,indexed address,uint256,uint256)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleWithdraw
+      file: ./src/mappings.ts
+
+  # ── AMM ──────────────────────────────────────────────────────────────────────
+  - kind: ethereum
+    name: RWAAMM
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      abi: RWAAMM
+      startBlock: 0 # UPDATE after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - AmmSwap
+      abis:
+        - name: RWAAMM
+          file: ./abis/RWAAMM.json
+      eventHandlers:
+        - event: Swap(indexed address,indexed address,uint256,uint256)
+          handler: handleSwap
+        - event: Sync(uint112,uint112)
+          handler: handleSync
+      file: ./src/mappings.ts
+
+  # ── Governor ─────────────────────────────────────────────────────────────────
+  - kind: ethereum
+    name: RWAGovernor
+    network: base-sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      abi: RWAGovernor
+      startBlock: 0 # UPDATE after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - GovernanceProposal
+        - ProposalVote
+      abis:
+        - name: RWAGovernor
+          file: ./abis/RWAGovernor.json
+      eventHandlers:
+        - event: ProposalCreated(uint256,address,address[],uint256[],string[],bytes[],uint256,uint256,string)
+          handler: handleProposalCreated
+        - event: VoteCast(indexed address,uint256,uint8,uint256,string)
+          handler: handleVoteCast
+        - event: ProposalQueued(uint256,uint256)
+          handler: handleProposalQueued
+        - event: ProposalExecuted(uint256)
+          handler: handleProposalExecuted
+        - event: ProposalCanceled(uint256)
+          handler: handleProposalCanceled
+      file: ./src/mappings.ts

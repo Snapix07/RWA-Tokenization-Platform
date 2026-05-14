@@ -1,0 +1,58 @@
+[
+  {
+    "type": "event",
+    "name": "Swap",
+    "inputs": [
+      { "name": "sender",    "type": "address", "indexed": true },
+      { "name": "tokenIn",   "type": "address", "indexed": true },
+      { "name": "amountIn",  "type": "uint256", "indexed": false },
+      { "name": "amountOut", "type": "uint256", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "LiquidityAdded",
+    "inputs": [
+      { "name": "provider",  "type": "address", "indexed": true },
+      { "name": "amountA",   "type": "uint256", "indexed": false },
+      { "name": "amountB",   "type": "uint256", "indexed": false },
+      { "name": "liquidity", "type": "uint256", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "LiquidityRemoved",
+    "inputs": [
+      { "name": "provider",  "type": "address", "indexed": true },
+      { "name": "amountA",   "type": "uint256", "indexed": false },
+      { "name": "amountB",   "type": "uint256", "indexed": false },
+      { "name": "liquidity", "type": "uint256", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "Sync",
+    "inputs": [
+      { "name": "reserveA", "type": "uint112", "indexed": false },
+      { "name": "reserveB", "type": "uint112", "indexed": false }
+    ]
+  },
+  {
+    "type": "function", "name": "tokenA",
+    "stateMutability": "view", "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function", "name": "tokenB",
+    "stateMutability": "view", "inputs": [],
+    "outputs": [{ "name": "", "type": "address" }]
+  },
+  {
+    "type": "function", "name": "getReserves",
+    "stateMutability": "view", "inputs": [],
+    "outputs": [
+      { "name": "reserveA", "type": "uint112" },
+      { "name": "reserveB", "type": "uint112" }
+    ]
+  }
+]

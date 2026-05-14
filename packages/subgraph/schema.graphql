@@ -1,0 +1,81 @@
+"""
+Entity 1 — AssetToken
+Tracks every RWA-backed ERC-20 deployed by the AssetFactory (TokenDeployed event).
+"""
+type AssetToken @entity {
+  id: ID! # proxy address
+  assetId: Bytes! # keccak256 asset identifier
+  deterministic: Boolean! # true = CREATE2, false = CREATE
+  deployedAt: BigInt! # block timestamp
+  deployedBlock: BigInt!
+  deposits: [VaultPosition!]! @derivedFrom(field: "assetToken")
+}
+
+"""
+Entity 2 — VaultPosition
+Tracks per-user cumulative vault deposits/withdrawals (Deposit + Withdraw events on RWAVault).
+Updated on every deposit or withdrawal — one record per user per vault.
+"""
+type VaultPosition @entity {
+  id: ID! # vaultAddress-userAddress
+  vault: Bytes! # RWAVault proxy address
+  user: Bytes! # position holder
+  assetToken: AssetToken
+  totalDeposited: BigInt! # cumulative assets deposited (18 dec)
+  totalWithdrawn: BigInt! # cumulative assets withdrawn
+  sharesBalance: BigInt! # current share balance (derived from Transfer events)
+  lastUpdated: BigInt!
+}
+
+"""
+Entity 3 — AmmSwap
+One record per swap executed through RWAAMM.
+"""
+type AmmSwap @entity {
+  id: ID! # txHash-logIndex
+  amm: Bytes! # RWAAMM contract address
+  sender: Bytes!
+  tokenIn: Bytes!
+  amountIn: BigInt!
+  amountOut: BigInt!
+  reserveAAfter: BigInt!
+  reserveBAfter: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+}
+
+"""
+Entity 4 — GovernanceProposal
+Full lifecycle of a DAO proposal: created → voted → queued → executed/defeated.
+"""
+type GovernanceProposal @entity {
+  id: ID! # proposalId as string
+  proposalId: BigInt!
+  proposer: Bytes!
+  targets: [Bytes!]!
+  calldatas: [Bytes!]!
+  description: String!
+  voteStart: BigInt! # snapshot block
+  voteEnd: BigInt! # deadline block
+  # state: 0=Pending 1=Active 2=Canceled 3=Defeated 4=Succeeded 5=Queued 6=Expired 7=Executed
+  state: Int!
+  forVotes: BigInt!
+  againstVotes: BigInt!
+  abstainVotes: BigInt!
+  etaSeconds: BigInt # set when queued
+  executedAt: BigInt
+  createdAt: BigInt!
+  votes: [ProposalVote!]! @derivedFrom(field: "proposal")
+}
+
+"""
+Sub-entity — ProposalVote (derived from VoteCast events, linked to GovernanceProposal).
+"""
+type ProposalVote @entity {
+  id: ID! # proposalId-voterAddress
+  proposal: GovernanceProposal!
+  voter: Bytes!
+  support: Int! # 0=Against 1=For 2=Abstain
+  weight: BigInt!
+  reason: String
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@rwa/subgraph",
+  "version": "1.0.0",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:studio": "graph deploy --studio rwa-tokenization-platform",
+    "create:local": "graph create --node http://localhost:8020/ rwa-tokenization-platform",
+    "deploy:local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 rwa-tokenization-platform"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.81.0",
+    "@graphprotocol/graph-ts": "^0.35.1"
+  }
+}
