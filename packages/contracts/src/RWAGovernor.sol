@@ -1,0 +1,119 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {Governor} from "@openzeppelin/contracts/governance/Governor.sol";
+import {GovernorCountingSimple} from "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import {GovernorSettings} from "@openzeppelin/contracts/governance/extensions/GovernorSettings.sol";
+import {GovernorTimelockControl} from "@openzeppelin/contracts/governance/extensions/GovernorTimelockControl.sol";
+import {GovernorVotes} from "@openzeppelin/contracts/governance/extensions/GovernorVotes.sol";
+import {
+    GovernorVotesQuorumFraction
+} from "@openzeppelin/contracts/governance/extensions/GovernorVotesQuorumFraction.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+
+/// @title RWAGovernor
+/// @notice DAO Governor for the RWA Tokenization Platform.
+///         Controls asset onboarding, oracle feed updates, vault parameters, and
+///         authorized issuer management — all routed through the 2-day Timelock.
+///
+/// Parameters (Base Sepolia, ~2 s/block):
+///   Voting delay  : 43 200 blocks (~1 day)
+///   Voting period : 302 400 blocks (~1 week)
+///   Quorum        : 4% of total supply at proposal snapshot
+///   Threshold     : 1% of total supply at time of proposal (computed dynamically)
+///
+/// Design patterns: Timelock (via GovernorTimelockControl).
+contract RWAGovernor is
+    Governor,
+    GovernorSettings,
+    GovernorCountingSimple,
+    GovernorVotes,
+    GovernorVotesQuorumFraction,
+    GovernorTimelockControl
+{
+    constructor(IVotes token_, TimelockController timelock_)
+        Governor("RWA DAO")
+        GovernorSettings(
+            43_200, // voting delay  — ~1 day at 2 s/block on Base
+            302_400, // voting period — ~1 week at 2 s/block on Base
+            0 // placeholder; overridden by proposalThreshold() below
+        )
+        GovernorVotes(token_)
+        GovernorVotesQuorumFraction(4) // 4% quorum
+        GovernorTimelockControl(timelock_)
+    {}
+
+    // -------------------------------------------------------------------------
+    // 1% dynamic proposal threshold
+    // -------------------------------------------------------------------------
+
+    /// @notice Returns 1% of the governance token's current total supply.
+    ///         Overrides the static GovernorSettings threshold.
+    function proposalThreshold() public view override(Governor, GovernorSettings) returns (uint256) {
+        return IERC20(address(token())).totalSupply() / 100;
+    }
+
+    // -------------------------------------------------------------------------
+    // Required overrides (OZ v5 diamond inheritance)
+    // -------------------------------------------------------------------------
+
+    function votingDelay() public view override(Governor, GovernorSettings) returns (uint256) {
+        return super.votingDelay();
+    }
+
+    function votingPeriod() public view override(Governor, GovernorSettings) returns (uint256) {
+        return super.votingPeriod();
+    }
+
+    function quorum(uint256 blockNumber) public view override(Governor, GovernorVotesQuorumFraction) returns (uint256) {
+        return super.quorum(blockNumber);
+    }
+
+    function state(uint256 proposalId) public view override(Governor, GovernorTimelockControl) returns (ProposalState) {
+        return super.state(proposalId);
+    }
+
+    function proposalNeedsQueuing(uint256 proposalId)
+        public
+        view
+        override(Governor, GovernorTimelockControl)
+        returns (bool)
+    {
+        return super.proposalNeedsQueuing(proposalId);
+    }
+
+    function _queueOperations(
+        uint256 proposalId,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) returns (uint48) {
+        return super._queueOperations(proposalId, targets, values, calldatas, descriptionHash);
+    }
+
+    function _executeOperations(
+        uint256 proposalId,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) {
+        super._executeOperations(proposalId, targets, values, calldatas, descriptionHash);
+    }
+
+    function _cancel(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
+        return super._cancel(targets, values, calldatas, descriptionHash);
+    }
+
+    function _executor() internal view override(Governor, GovernorTimelockControl) returns (address) {
+        return super._executor();
+    }
+}
