@@ -29,8 +29,8 @@ contract Deploy is Script {
     uint256 constant INITIAL_GOV_SUPPLY = 10_000_000 * 1e18; // 10 M RWAGOV
     uint256 constant VAULT_DEPOSIT_CAP = 0; // 0 = uncapped for testnet
 
-    // Base Sepolia live Chainlink feeds (address(0) falls back to MockAggregator)
-    address constant ETH_USD_FEED = 0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1;
+    // Arbitrum Sepolia live Chainlink ETH/USD feed
+    address constant ETH_USD_FEED = 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165;
     uint96 constant FEED_STALENESS = 3600; // 1 hour
 
     // Demo asset identifiers
@@ -40,8 +40,9 @@ contract Deploy is Script {
     // -----------------------------------------------------------------------
 
     function run() external {
-        address deployer = vm.envAddress("DEPLOYER_ADDRESS");
-        vm.startBroadcast();
+        uint256 deployerKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerKey);
+        vm.startBroadcast(deployerKey);
 
         // 1. Governance token
         GovernanceToken govToken = new GovernanceToken(deployer, INITIAL_GOV_SUPPLY);

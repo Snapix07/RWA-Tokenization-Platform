@@ -1,6 +1,6 @@
 # RWA Tokenization Platform
 
-A production-grade decentralized protocol for tokenizing real-world assets (RWA) on Base Sepolia. Blockchain Technologies 2 final project — Option C.
+A production-grade decentralized protocol for tokenizing real-world assets (RWA) on **Arbitrum Sepolia**. Blockchain Technologies 2 final project — Option C.
 
 | Package | Description |
 |---|---|
@@ -34,23 +34,24 @@ A production-grade decentralized protocol for tokenizing real-world assets (RWA)
 
 ---
 
-## Deployed Contracts — Base Sepolia (chain 84532)
+## Deployed Contracts — Arbitrum Sepolia (chain 421614)
 
-> Run `forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast --verify` then update this table.
+All contracts deployed and verified at commit `feature/contracts` · [broadcast log](packages/contracts/broadcast/Deploy.s.sol/421614/run-latest.json)
 
-| Contract | Address | Basescan |
+| Contract | Address | Explorer |
 |---|---|---|
-| GovernanceToken | `pending` | — |
-| ChainlinkOracleAdapter | `pending` | — |
-| AssetNFT | `pending` | — |
-| AssetTokenV1 impl | `pending` | — |
-| AssetTokenV2 impl | `pending` | — |
-| AssetFactory | `pending` | — |
-| AssetToken ETHBOND (proxy) | `pending` | — |
-| RWAVault (proxy) | `pending` | — |
-| RWAAMM | `pending` | — |
-| RWATimelockController | `pending` | — |
-| RWAGovernor | `pending` | — |
+| GovernanceToken | `0x57B0e45C40CCE6248a102Cdf8612Cdc683Cf3Fd9` | [arbiscan](https://sepolia.arbiscan.io/address/0x57B0e45C40CCE6248a102Cdf8612Cdc683Cf3Fd9) |
+| ChainlinkOracleAdapter | `0x213B4519E7a59Bd2BEEDde148B8b6fFFCE5dEB53` | [arbiscan](https://sepolia.arbiscan.io/address/0x213B4519E7a59Bd2BEEDde148B8b6fFFCE5dEB53) |
+| AssetNFT | `0x88AbE0eB4Beb185c3e63BCD58892758C9f0ac3D6` | [arbiscan](https://sepolia.arbiscan.io/address/0x88AbE0eB4Beb185c3e63BCD58892758C9f0ac3D6) |
+| AssetTokenV1 (impl) | `0x337D60f8be5E65dce632E4f2794b58EA7416AC0e` | [arbiscan](https://sepolia.arbiscan.io/address/0x337D60f8be5E65dce632E4f2794b58EA7416AC0e) |
+| AssetTokenV2 (impl) | `0xc91C9F525E6A7B7f19Ac9ade118a97929f3A57aB` | [arbiscan](https://sepolia.arbiscan.io/address/0xc91C9F525E6A7B7f19Ac9ade118a97929f3A57aB) |
+| AssetFactory | `0x0d41539C9B43cd675dEBBC3dB8754e26ec274eDF` | [arbiscan](https://sepolia.arbiscan.io/address/0x0d41539C9B43cd675dEBBC3dB8754e26ec274eDF) |
+| AssetToken ETHBOND (proxy) | `0xBE60c53E15328b18E82E7204fbECA45e11628caa` | [arbiscan](https://sepolia.arbiscan.io/address/0xBE60c53E15328b18E82E7204fbECA45e11628caa) |
+| RWAVault (impl) | `0x3AF9B9bf4DF2f4dDFE3F07e5f971528D6EdcCbF3` | [arbiscan](https://sepolia.arbiscan.io/address/0x3AF9B9bf4DF2f4dDFE3F07e5f971528D6EdcCbF3) |
+| RWAVault (proxy) | `0xFbECEB9447925e0c2e433f5eD674F7110AF67018` | [arbiscan](https://sepolia.arbiscan.io/address/0xFbECEB9447925e0c2e433f5eD674F7110AF67018) |
+| RWAAMM | `0x658eD17F2686A652ACC89162c7aA99b957e7938E` | [arbiscan](https://sepolia.arbiscan.io/address/0x658eD17F2686A652ACC89162c7aA99b957e7938E) |
+| RWATimelockController | `0x1C9e29A66561B1533578cFc27AB0A4cB7F740c8e` | [arbiscan](https://sepolia.arbiscan.io/address/0x1C9e29A66561B1533578cFc27AB0A4cB7F740c8e) |
+| RWAGovernor | `0x091858adb6f82c323c4B4d1b0aA59Cec953B9E75` | [arbiscan](https://sepolia.arbiscan.io/address/0x091858adb6f82c323c4B4d1b0aA59Cec953B9E75) |
 
 ---
 
@@ -73,7 +74,7 @@ A production-grade decentralized protocol for tokenizing real-world assets (RWA)
 
 ## Subgraph
 
-Subgraph Studio slug: `rwa-tokenization-platform` — network: `base-sepolia`
+Subgraph Studio slug: `rwa-tokenization-platform` — network: `arbitrum-sepolia`
 
 **4 entities:** `AssetToken`, `VaultPosition`, `AmmSwap`, `GovernanceProposal` / `ProposalVote`
 
@@ -112,7 +113,7 @@ query Votes($id: String!) { governanceProposal(id: $id) { forVotes againstVotes 
 
 | Parameter | Value |
 |---|---|
-| Voting delay | 43 200 blocks (~1 day, Base Sepolia 2 s/block) |
+| Voting delay | 43 200 blocks (~1 day at Arbitrum ~2 s/block) |
 | Voting period | 302 400 blocks (~1 week) |
 | Quorum | 4% of total supply at snapshot block |
 | Proposal threshold | 1% of current total supply (dynamic) |
@@ -147,13 +148,22 @@ forge coverage --report markdown > coverage-report.md  # coverage
 ## Deployment
 
 ```bash
-cp .env.example .env   # fill PRIVATE_KEY, BASE_SEPOLIA_RPC_URL, BASESCAN_API_KEY, DEPLOYER_ADDRESS
+cp .env.example .env   # fill PRIVATE_KEY, ARB_SEPOLIA_RPC_URL, ARBISCAN_API_KEY
 
 cd packages/contracts
-forge script script/Deploy.s.sol --rpc-url base_sepolia --broadcast --verify -vvvv
+forge script script/Deploy.s.sol --rpc-url arb_sepolia --broadcast --verify -vvvv
 
-# Verify post-deployment wiring (fill env vars with deployed addresses first)
-forge script script/VerifyDeployment.s.sol --rpc-url base_sepolia
+# Re-verify if Etherscan V2 fails (keyless fallback)
+forge script script/Deploy.s.sol --rpc-url arb_sepolia --verify --verifier sourcify --resume
+
+# Post-deployment wiring check
+export TIMELOCK_ADDRESS=0x1C9e29A66561B1533578cFc27AB0A4cB7F740c8e
+export GOVERNOR_ADDRESS=0x091858adb6f82c323c4B4d1b0aA59Cec953B9E75
+export VAULT_ADDRESS=0xFbECEB9447925e0c2e433f5eD674F7110AF67018
+export ASSET_TOKEN_ADDRESS=0xBE60c53E15328b18E82E7204fbECA45e11628caa
+export ORACLE_ADDRESS=0x213B4519E7a59Bd2BEEDde148B8b6fFFCE5dEB53
+export DEPLOYER_ADDRESS=0x86A5A05aC0cAb580d3f0082A70E3f65281aABAf0
+forge script script/VerifyDeployment.s.sol --rpc-url arb_sepolia
 ```
 
 Expected verification output:

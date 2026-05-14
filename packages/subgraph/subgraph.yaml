@@ -9,11 +9,11 @@ dataSources:
   # ── Asset Factory ────────────────────────────────────────────────────────────
   - kind: ethereum
     name: AssetFactory
-    network: base-sepolia
+    network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      address: "0x0d41539C9B43cd675dEBBC3dB8754e26ec274eDF"
       abi: AssetFactory
-      startBlock: 0 # UPDATE after deployment
+      startBlock: 268346764
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -31,11 +31,11 @@ dataSources:
   # ── RWA Vault ────────────────────────────────────────────────────────────────
   - kind: ethereum
     name: RWAVault
-    network: base-sepolia
+    network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      address: "0xFbECEB9447925e0c2e433f5eD674F7110AF67018"
       abi: RWAVault
-      startBlock: 0 # UPDATE after deployment
+      startBlock: 268346800
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -55,11 +55,11 @@ dataSources:
   # ── AMM ──────────────────────────────────────────────────────────────────────
   - kind: ethereum
     name: RWAAMM
-    network: base-sepolia
+    network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      address: "0x658eD17F2686A652ACC89162c7aA99b957e7938E"
       abi: RWAAMM
-      startBlock: 0 # UPDATE after deployment
+      startBlock: 268346812
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -79,11 +79,11 @@ dataSources:
   # ── Governor ─────────────────────────────────────────────────────────────────
   - kind: ethereum
     name: RWAGovernor
-    network: base-sepolia
+    network: arbitrum-sepolia
     source:
-      address: "0x0000000000000000000000000000000000000000" # UPDATE after deployment
+      address: "0x091858adb6f82c323c4B4d1b0aA59Cec953B9E75"
       abi: RWAGovernor
-      startBlock: 0 # UPDATE after deployment
+      startBlock: 268346836
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
