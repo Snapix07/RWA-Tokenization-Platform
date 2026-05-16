@@ -1,11 +1,27 @@
-import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { createConfig, http } from "wagmi";
 import { arbitrumSepolia } from "viem/chains";
+import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { metaMaskWallet, injectedWallet } from "@rainbow-me/rainbowkit/wallets";
 
-export const wagmiConfig = getDefaultConfig({
-  appName: "RWA Tokenization Platform",
-  projectId: "2a0d816f728ff0ccc76fcccc122759d8",
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [metaMaskWallet, injectedWallet],
+    },
+  ],
+  {
+    appName: "RWA Tokenization Platform",
+    projectId: "dummy",
+  },
+);
+
+export const wagmiConfig = createConfig({
   chains: [arbitrumSepolia],
-  ssr: false,
+  connectors,
+  transports: {
+    [arbitrumSepolia.id]: http(),
+  },
 });
 
 export { arbitrumSepolia };
