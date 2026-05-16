@@ -1,41 +1,12 @@
-import { useReadContracts, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { useState } from "react";
-import { type Address } from "viem";
+import { useReadContracts, useWriteContract } from "wagmi";
+import { type Address, keccak256, toBytes } from "viem";
 import { ADDRESSES } from "../config/addresses";
 import { GOVERNANCE_TOKEN_ABI, RWA_GOVERNOR_ABI } from "../config/abis";
+import { useTx, type TxStatus } from "./useTx";
 
-export type TxStatus = "idle" | "pending" | "success" | "error";
+export type { TxStatus };
 
-function useTx() {
-  const { writeContractAsync } = useWriteContract();
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [status, setStatus] = useState<TxStatus>("idle");
-  const [errMsg, setErrMsg] = useState("");
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const send = async (fn: () => Promise<`0x${string}`>) => {
-    try {
-      setStatus("pending");
-      setErrMsg("");
-      const txHash = await fn();
-      setHash(txHash);
-      setStatus("success");
-    } catch (e: unknown) {
-      setStatus("error");
-      if (e instanceof Error) {
-        if (e.message.includes("User rejected")) setErrMsg("Transaction rejected.");
-        else setErrMsg(e.message.slice(0, 120));
-      }
-    }
-  };
-
-  return { send, hash, status, errMsg, isConfirming, isConfirmed, writeContractAsync };
-}
-
-export function useDelegate(account?: Address) {
+export function useDelegate() {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
 
@@ -46,6 +17,7 @@ export function useDelegate(account?: Address) {
         abi: GOVERNANCE_TOKEN_ABI,
         functionName: "delegate",
         args: [delegatee],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -64,12 +36,14 @@ export function useCastVote() {
             abi: RWA_GOVERNOR_ABI,
             functionName: "castVoteWithReason",
             args: [proposalId, support, reason],
+            maxFeePerGas: 100_000_000n,
           })
         : writeContractAsync({
             address: ADDRESSES.rwaGovernor,
             abi: RWA_GOVERNOR_ABI,
             functionName: "castVote",
             args: [proposalId, support],
+            maxFeePerGas: 100_000_000n,
           }),
     );
 
@@ -113,6 +87,75 @@ export function useGovernanceData(account?: Address) {
     totalSupply: data?.[3]?.result as bigint | undefined,
     refetch,
   };
+}
+
+export function usePropose() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const propose = (
+    targets: Address[],
+    values: bigint[],
+    calldatas: `0x${string}`[],
+    description: string,
+  ) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "propose",
+        args: [targets, values, calldatas, description],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, propose };
+}
+
+export function useQueueProposal() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const queue = (
+    targets: Address[],
+    values: bigint[],
+    calldatas: `0x${string}`[],
+    description: string,
+  ) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "queue",
+        args: [targets, values, calldatas, keccak256(toBytes(description))],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, queue };
+}
+
+export function useExecuteProposal() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const execute = (
+    targets: Address[],
+    values: bigint[],
+    calldatas: `0x${string}`[],
+    description: string,
+  ) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "execute",
+        args: [targets, values, calldatas, keccak256(toBytes(description))],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, execute };
 }
 
 export const PROPOSAL_STATES: Record<number, { label: string; badge: string }> = {

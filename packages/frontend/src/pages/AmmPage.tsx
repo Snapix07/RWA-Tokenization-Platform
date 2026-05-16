@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { type Address } from "viem";
 import { ADDRESSES } from "../config/addresses";
@@ -41,6 +41,7 @@ function calcAmountOut(amountIn: bigint, reserveIn: bigint, reserveOut: bigint):
 
 export function AmmPage() {
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
   const [tab, setTab] = useState<Tab>("swap");
 
   const [swapDirection, setSwapDirection] = useState<"AtoB" | "BtoA">("AtoB");
@@ -53,9 +54,11 @@ export function AmmPage() {
 
   const amm = useAmmData(address);
 
-  const reserveIn = swapDirection === "AtoB" ? amm.reserves?.[0] : amm.reserves?.[1];
-  const reserveOut = swapDirection === "AtoB" ? amm.reserves?.[1] : amm.reserves?.[0];
-  const tokenIn = swapDirection === "AtoB" ? amm.tokenA : amm.tokenB;
+  // Contract: tokenA=GOV (reserves[0]), tokenB=ETHBOND (reserves[1])
+  // UI: AtoB = ETHBOND→GOV, so reserveIn=ETHBOND=reserves[1], tokenIn=tokenB
+  const reserveIn = swapDirection === "AtoB" ? amm.reserves?.[1] : amm.reserves?.[0];
+  const reserveOut = swapDirection === "AtoB" ? amm.reserves?.[0] : amm.reserves?.[1];
+  const tokenIn = swapDirection === "AtoB" ? amm.tokenB : amm.tokenA;
 
   const amountOut = useMemo(() => {
     if (!swapAmt || !reserveIn || !reserveOut) return 0n;
@@ -75,13 +78,16 @@ export function AmmPage() {
     return (Number(rB) / Number(rA)).toFixed(6);
   }, [amm.reserves]);
 
-  const swapNeedsApprove =
-    swapAmt &&
-    amm.allowanceA !== undefined &&
-    swapDirection === "AtoB" &&
-    safeParse(swapAmt) > amm.allowanceA;
+  // AtoB = ETHBOND→GOV: need ETHBOND (allowanceA) approved
+  // BtoA = GOV→ETHBOND: need GOV (allowanceB) approved
+  const swapNeedsApproveA =
+    swapAmt && swapDirection === "AtoB" && (!amm.allowanceA || safeParse(swapAmt) > amm.allowanceA);
+  const swapNeedsApproveB =
+    swapAmt && swapDirection === "BtoA" && (!amm.allowanceB || safeParse(swapAmt) > amm.allowanceB);
+  const swapNeedsApprove = swapNeedsApproveA || swapNeedsApproveB;
 
-  const approveA = useApproveForAmm(ADDRESSES.assetToken, address);
+  const approveA = useApproveForAmm(ADDRESSES.assetToken);
+  const approveB = useApproveForAmm(ADDRESSES.governanceToken);
   const swapTx = useAmmSwap(address);
   const addLiqTx = useAddLiquidity(address);
   const removeLiqTx = useRemoveLiquidity(address);
@@ -95,9 +101,14 @@ export function AmmPage() {
   const recentSwaps = swapsData?.ammSwaps ?? [];
 
   const handleSwap = async () => {
-    if (!swapAmt || !tokenIn) return;
-    if (swapNeedsApprove) {
-      await approveA.approve();
+    if (!swapAmt || !tokenIn || !publicClient) return;
+    if (swapNeedsApproveA) {
+      const hash = await approveA.approve();
+      if (hash) await publicClient.waitForTransactionReceipt({ hash });
+    }
+    if (swapNeedsApproveB) {
+      const hash = await approveB.approve();
+      if (hash) await publicClient.waitForTransactionReceipt({ hash });
     }
     await swapTx.swap(tokenIn as Address, swapAmt, amountOutMin);
     setSwapAmt("");
@@ -105,7 +116,15 @@ export function AmmPage() {
   };
 
   const handleAddLiquidity = async () => {
-    if (!amtA || !amtB) return;
+    if (!amtA || !amtB || !publicClient) return;
+    if (!amm.allowanceA || safeParse(amtA) > amm.allowanceA) {
+      const hash = await approveA.approve();
+      if (hash) await publicClient.waitForTransactionReceipt({ hash });
+    }
+    if (!amm.allowanceB || safeParse(amtB) > amm.allowanceB) {
+      const hash = await approveB.approve();
+      if (hash) await publicClient.waitForTransactionReceipt({ hash });
+    }
     await addLiqTx.addLiquidity(amtA, amtB);
     setAmtA("");
     setAmtB("");

@@ -18,16 +18,18 @@ export function useTx() {
     hash,
   });
 
-  const send = async (fn: () => Promise<`0x${string}`>) => {
+  const send = async (fn: () => Promise<`0x${string}`>): Promise<`0x${string}` | undefined> => {
     try {
       setStatus("pending");
       setErrMsg("");
       const txHash = await fn();
       setHash(txHash);
       setStatus("success");
+      return txHash;
     } catch (e: unknown) {
       setStatus("error");
       setErrMsg(parseError(e));
+      return undefined;
     }
   };
 

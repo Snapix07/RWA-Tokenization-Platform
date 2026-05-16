@@ -64,12 +64,16 @@ export const GOVERNANCE_PROPOSALS_QUERY = gql`
       id
       proposalId
       proposer
+      targets
+      calldatas
       description
       forVotes
       againstVotes
       abstainVotes
+      voteStart
       voteEnd
       state
+      etaSeconds
       createdAt
     }
   }
@@ -109,11 +113,15 @@ export interface SubgraphProposal {
   id: string;
   proposalId: string;
   proposer: string;
+  targets: string[];
+  calldatas: string[];
   description: string;
   forVotes: string;
   againstVotes: string;
   abstainVotes: string;
+  voteStart: string;
   voteEnd: string;
   state: number;
+  etaSeconds: string | null;
   createdAt: string;
 }

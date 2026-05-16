@@ -20,7 +20,7 @@ export const wagmiConfig = createConfig({
   chains: [arbitrumSepolia],
   connectors,
   transports: {
-    [arbitrumSepolia.id]: http(),
+    [arbitrumSepolia.id]: http("https://sepolia-rollup.arbitrum.io/rpc"),
   },
 });
 
