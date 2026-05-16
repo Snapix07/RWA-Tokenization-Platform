@@ -1,5 +1,5 @@
 import { useReadContracts, useWriteContract } from "wagmi";
-import { type Address } from "viem";
+import { type Address, keccak256, toBytes } from "viem";
 import { ADDRESSES } from "../config/addresses";
 import { GOVERNANCE_TOKEN_ABI, RWA_GOVERNOR_ABI } from "../config/abis";
 import { useTx, type TxStatus } from "./useTx";
@@ -17,6 +17,7 @@ export function useDelegate() {
         abi: GOVERNANCE_TOKEN_ABI,
         functionName: "delegate",
         args: [delegatee],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -35,12 +36,14 @@ export function useCastVote() {
             abi: RWA_GOVERNOR_ABI,
             functionName: "castVoteWithReason",
             args: [proposalId, support, reason],
+            maxFeePerGas: 100_000_000n,
           })
         : writeContractAsync({
             address: ADDRESSES.rwaGovernor,
             abi: RWA_GOVERNOR_ABI,
             functionName: "castVote",
             args: [proposalId, support],
+            maxFeePerGas: 100_000_000n,
           }),
     );
 
@@ -84,6 +87,75 @@ export function useGovernanceData(account?: Address) {
     totalSupply: data?.[3]?.result as bigint | undefined,
     refetch,
   };
+}
+
+export function usePropose() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const propose = (
+    targets: Address[],
+    values: bigint[],
+    calldatas: `0x${string}`[],
+    description: string,
+  ) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "propose",
+        args: [targets, values, calldatas, description],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, propose };
+}
+
+export function useQueueProposal() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const queue = (
+    targets: Address[],
+    values: bigint[],
+    calldatas: `0x${string}`[],
+    description: string,
+  ) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "queue",
+        args: [targets, values, calldatas, keccak256(toBytes(description))],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, queue };
+}
+
+export function useExecuteProposal() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const execute = (
+    targets: Address[],
+    values: bigint[],
+    calldatas: `0x${string}`[],
+    description: string,
+  ) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "execute",
+        args: [targets, values, calldatas, keccak256(toBytes(description))],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, execute };
 }
 
 export const PROPOSAL_STATES: Record<number, { label: string; badge: string }> = {

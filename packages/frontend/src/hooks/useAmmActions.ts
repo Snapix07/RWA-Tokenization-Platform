@@ -2,7 +2,7 @@ import { useWriteContract, useReadContracts } from "wagmi";
 import { parseUnits, maxUint256 } from "viem";
 import { type Address } from "viem";
 import { ADDRESSES } from "../config/addresses";
-import { ASSET_TOKEN_ABI, RWA_AMM_ABI } from "../config/abis";
+import { ASSET_TOKEN_ABI, RWA_AMM_ABI, GOVERNANCE_TOKEN_ABI } from "../config/abis";
 import { useTx, type TxStatus } from "./useTx";
 
 export type { TxStatus };
@@ -18,6 +18,7 @@ export function useApproveForAmm(tokenAddress: Address) {
         abi: ASSET_TOKEN_ABI,
         functionName: "approve",
         args: [ADDRESSES.rwaAmm, maxUint256],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -33,8 +34,9 @@ export function useAmmSwap(recipient?: Address) {
       writeContractAsync({
         address: ADDRESSES.rwaAmm,
         abi: RWA_AMM_ABI,
-        functionName: "swap",
-        args: [tokenIn, parseUnits(amountIn, 18), amountOutMin, recipient!],
+        functionName: "swapExactTokensForTokens",
+        args: [parseUnits(amountIn, 18), amountOutMin, tokenIn, recipient!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -45,13 +47,15 @@ export function useAddLiquidity(recipient?: Address) {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
 
-  const addLiquidity = (amountA: string, amountB: string) =>
+  const addLiquidity = (ethbondAmount: string, govAmount: string) =>
     tx.send(() =>
       writeContractAsync({
         address: ADDRESSES.rwaAmm,
         abi: RWA_AMM_ABI,
         functionName: "addLiquidity",
-        args: [parseUnits(amountA, 18), parseUnits(amountB, 18), 0n, 0n, recipient!],
+        // Contract: tokenA=GOV, tokenB=ETHBOND — pass GOV first, ETHBOND second
+        args: [parseUnits(govAmount, 18), parseUnits(ethbondAmount, 18), 0n, 0n, recipient!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -69,6 +73,7 @@ export function useRemoveLiquidity(recipient?: Address) {
         abi: RWA_AMM_ABI,
         functionName: "removeLiquidity",
         args: [parseUnits(liquidity, 18), 0n, 0n, recipient!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -110,6 +115,12 @@ export function useAmmData(address?: Address) {
         functionName: "allowance",
         args: [address!, ADDRESSES.rwaAmm],
       },
+      {
+        address: ADDRESSES.governanceToken,
+        abi: GOVERNANCE_TOKEN_ABI,
+        functionName: "allowance",
+        args: [address!, ADDRESSES.rwaAmm],
+      },
     ],
     query: { enabled: !!address },
   });
@@ -120,6 +131,7 @@ export function useAmmData(address?: Address) {
   const totalLp = data?.[3]?.result as bigint | undefined;
   const userLp = data?.[4]?.result as bigint | undefined;
   const allowanceA = data?.[5]?.result as bigint | undefined;
+  const allowanceB = data?.[6]?.result as bigint | undefined;
 
   return {
     reserves,
@@ -128,6 +140,7 @@ export function useAmmData(address?: Address) {
     totalLp,
     userLp,
     allowanceA,
+    allowanceB,
     refetch,
   };
 }

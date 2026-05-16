@@ -309,13 +309,13 @@ export const RWA_AMM_ABI = [
     outputs: [{ name: "amountOut", type: "uint256" }],
   },
   {
-    name: "swap",
+    name: "swapExactTokensForTokens",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "tokenIn", type: "address" },
       { name: "amountIn", type: "uint256" },
       { name: "amountOutMin", type: "uint256" },
+      { name: "tokenIn", type: "address" },
       { name: "to", type: "address" },
     ],
     outputs: [{ name: "amountOut", type: "uint256" }],

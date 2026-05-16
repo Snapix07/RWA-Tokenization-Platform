@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
-import { formatUnits } from "viem";
+import { formatUnits, isAddress } from "viem";
 import { type Address } from "viem";
 import { useQuery } from "@tanstack/react-query";
 import { ADDRESSES } from "../config/addresses";
@@ -9,6 +9,9 @@ import {
   useGovernanceData,
   useDelegate,
   useCastVote,
+  usePropose,
+  useQueueProposal,
+  useExecuteProposal,
   PROPOSAL_STATES,
 } from "../hooks/useGovernance";
 import { TxButton } from "../components/TxButton";
@@ -87,6 +90,12 @@ function ProposalCard({
 
   const proposalIdBig = BigInt(proposal.proposalId);
 
+  // targets/calldatas/values из subgraph — нужны для queue/execute
+  const proposalTargets = (proposal.targets ?? []) as Address[];
+  const proposalCalldatas = (proposal.calldatas ?? []) as `0x${string}`[];
+  // values не хранятся в subgraph — для этого протокола всегда 0
+  const proposalValues = proposalTargets.map(() => 0n);
+
   // Проверяем on-chain state (свежее чем subgraph)
   const { data: onChainState } = useReadContract({
     address: ADDRESSES.rwaGovernor,
@@ -104,6 +113,8 @@ function ProposalCard({
   });
 
   const castVoteTx = useCastVote();
+  const queueTx = useQueueProposal();
+  const executeTx = useExecuteProposal();
 
   const stateNum = onChainState !== undefined ? Number(onChainState) : proposal.state;
   const stateInfo = PROPOSAL_STATES[stateNum] ?? { label: "Unknown", badge: "badge-queued" };
@@ -256,6 +267,71 @@ function ProposalCard({
         </div>
       )}
 
+      {/* Queue button — state = 4 (Succeeded) */}
+      {stateNum === 4 && userAddress && (
+        <div style={{ marginTop: 14 }}>
+          <hr className="divider" />
+          <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 8 }}>
+            Proposal succeeded — queue it for execution through the Timelock.
+          </div>
+          <TxButton
+            label="Queue Proposal"
+            loadingLabel="⏳ Queuing…"
+            successMessage="Proposal queued! Execute after the 2-day Timelock delay."
+            status={queueTx.status}
+            isConfirming={queueTx.isConfirming}
+            isConfirmed={queueTx.isConfirmed}
+            errMsg={queueTx.errMsg}
+            onClick={() =>
+              queueTx.queue(
+                proposalTargets,
+                proposalValues,
+                proposalCalldatas,
+                proposal.description,
+              )
+            }
+          />
+        </div>
+      )}
+
+      {/* Execute button — state = 5 (Queued) */}
+      {stateNum === 5 && userAddress && (
+        <div style={{ marginTop: 14 }}>
+          <hr className="divider" />
+          <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 4 }}>
+            Queued — execute after the 2-day Timelock delay.
+          </div>
+          {proposal.etaSeconds && (
+            <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8, opacity: 0.7 }}>
+              Earliest execution:{" "}
+              {new Date(Number(proposal.etaSeconds) * 1000).toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </div>
+          )}
+          <TxButton
+            label="Execute Proposal"
+            loadingLabel="⏳ Executing…"
+            successMessage="Proposal executed successfully!"
+            status={executeTx.status}
+            isConfirming={executeTx.isConfirming}
+            isConfirmed={executeTx.isConfirmed}
+            errMsg={executeTx.errMsg}
+            onClick={() =>
+              executeTx.execute(
+                proposalTargets,
+                proposalValues,
+                proposalCalldatas,
+                proposal.description,
+              )
+            }
+          />
+        </div>
+      )}
+
       {/* Proposal ID */}
       <div style={{ marginTop: 10, fontSize: 11, color: "var(--text)", opacity: 0.5 }}>
         ID: {proposal.proposalId}
@@ -264,10 +340,229 @@ function ProposalCard({
   );
 }
 
+// ── Форма создания пропозала ──────────────────────────────────────────────
+type ProposalAction = { target: string; value: string; calldata: string };
+
+function CreateProposalPanel({
+  votingPower,
+  totalSupply,
+  governorAddress,
+}: {
+  votingPower: bigint | undefined;
+  totalSupply: bigint | undefined;
+  governorAddress: string;
+}) {
+  const [description, setDescription] = useState("");
+  const [actions, setActions] = useState<ProposalAction[]>([
+    { target: "", value: "0", calldata: "0x" },
+  ]);
+  const proposeTx = usePropose();
+
+  const threshold = totalSupply !== undefined ? totalSupply / 100n : undefined;
+  const canPropose =
+    votingPower !== undefined && threshold !== undefined && votingPower >= threshold;
+
+  const addAction = () =>
+    setActions((prev) => [...prev, { target: "", value: "0", calldata: "0x" }]);
+
+  const removeAction = (i: number) => setActions((prev) => prev.filter((_, idx) => idx !== i));
+
+  const updateAction = (i: number, field: keyof ProposalAction, val: string) =>
+    setActions((prev) => prev.map((a, idx) => (idx === i ? { ...a, [field]: val } : a)));
+
+  const isValid =
+    canPropose &&
+    description.trim().length > 0 &&
+    actions.every((a) => isAddress(a.target) && a.calldata.startsWith("0x"));
+
+  const handleSubmit = async () => {
+    if (!isValid) return;
+    const targets = actions.map((a) => a.target as Address);
+    const values = actions.map((a) => {
+      try {
+        return BigInt(a.value || "0");
+      } catch {
+        return 0n;
+      }
+    });
+    const calldatas = actions.map((a) => (a.calldata || "0x") as `0x${string}`);
+    await proposeTx.propose(targets, values, calldatas, description.trim());
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 24 }}>
+      <div className="section-title">🏛️ Create Proposal</div>
+
+      {/* Threshold info */}
+      <div
+        style={{
+          background: canPropose ? "var(--success-bg)" : "var(--warning-bg)",
+          border: `1px solid ${canPropose ? "var(--success)" : "var(--warning)"}`,
+          borderRadius: 6,
+          padding: "10px 14px",
+          fontSize: 13,
+          color: canPropose ? "var(--success)" : "var(--warning)",
+          marginBottom: 16,
+        }}
+      >
+        {canPropose
+          ? `✓ You have enough voting power to propose (${fmt(votingPower)} / ${fmt(threshold)} required).`
+          : `⚠️ Need ≥ ${fmt(threshold)} GOV voting power. You have ${fmt(votingPower ?? 0n)}.`}
+      </div>
+
+      {/* Signal proposal hint */}
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text)",
+          marginBottom: 14,
+          background: "var(--bg-surface-2)",
+          borderRadius: 6,
+          padding: "8px 12px",
+        }}
+      >
+        💡 Signal-only proposal (no on-chain action)? Set target = Governor (
+        <code style={{ fontFamily: "monospace" }}>{governorAddress.slice(0, 10)}…</code>), value =
+        0, calldata = 0x.
+      </div>
+
+      {/* Description */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-h)", marginBottom: 6 }}>
+          Description *
+        </div>
+        <textarea
+          className="input-field"
+          placeholder="Describe the proposal — what it does and why…"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          style={{ minHeight: 80, resize: "vertical", fontFamily: "var(--sans)" }}
+        />
+      </div>
+
+      {/* Actions */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-h)", marginBottom: 8 }}>
+          Actions
+        </div>
+        {actions.map((action, i) => (
+          <div
+            key={i}
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 8,
+              }}
+            >
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>
+                Action #{i + 1}
+              </span>
+              {actions.length > 1 && (
+                <button
+                  className="btn btn-danger"
+                  style={{ fontSize: 11, padding: "2px 10px" }}
+                  onClick={() => removeAction(i)}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {/* Target */}
+              <div style={{ flex: 3, minWidth: 220 }}>
+                <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 4 }}>
+                  Target address *
+                </div>
+                <input
+                  className="input-field"
+                  placeholder="0x…"
+                  value={action.target}
+                  onChange={(e) => updateAction(i, "target", e.target.value)}
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: 12,
+                    borderColor: action.target && !isAddress(action.target) ? "var(--danger)" : "",
+                  }}
+                />
+              </div>
+
+              {/* Value */}
+              <div style={{ flex: 1, minWidth: 90 }}>
+                <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 4 }}>
+                  Value (wei)
+                </div>
+                <input
+                  className="input-field"
+                  placeholder="0"
+                  value={action.value}
+                  onChange={(e) => updateAction(i, "value", e.target.value)}
+                  style={{ fontFamily: "monospace", fontSize: 12 }}
+                />
+              </div>
+
+              {/* Calldata */}
+              <div style={{ flex: 4, minWidth: 220, width: "100%" }}>
+                <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 4 }}>
+                  Calldata (hex)
+                </div>
+                <input
+                  className="input-field"
+                  placeholder="0x"
+                  value={action.calldata}
+                  onChange={(e) => updateAction(i, "calldata", e.target.value)}
+                  style={{
+                    fontFamily: "monospace",
+                    fontSize: 12,
+                    borderColor:
+                      action.calldata && !action.calldata.startsWith("0x") ? "var(--danger)" : "",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+
+        <button
+          className="btn btn-secondary"
+          style={{ fontSize: 12, padding: "6px 14px" }}
+          onClick={addAction}
+        >
+          + Add Action
+        </button>
+      </div>
+
+      <hr className="divider" />
+
+      <TxButton
+        label="Submit Proposal"
+        loadingLabel="⏳ Submitting…"
+        successMessage="Proposal submitted! It will appear after indexing (~1 min)."
+        status={proposeTx.status}
+        isConfirming={proposeTx.isConfirming}
+        isConfirmed={proposeTx.isConfirmed}
+        errMsg={proposeTx.errMsg}
+        disabled={!isValid || proposeTx.status === "pending" || proposeTx.isConfirming}
+        onClick={handleSubmit}
+      />
+    </div>
+  );
+}
+
 // ── Главная страница ──────────────────────────────────────────────────────
 export function GovernancePage() {
   const { address, isConnected } = useAccount();
   const [delegateInput, setDelegateInput] = useState("");
+  const [showCreateProposal, setShowCreateProposal] = useState(false);
 
   const govData = useGovernanceData(address);
   const delegateTx = useDelegate();
@@ -515,8 +810,25 @@ export function GovernancePage() {
         }}
       >
         <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-h)" }}>Proposals</h2>
-        <span style={{ fontSize: 12, color: "var(--text)" }}>⛓ On-chain state</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 12, color: "var(--text)" }}>⛓ On-chain state</span>
+          <button
+            className={`btn ${showCreateProposal ? "btn-secondary" : "btn-primary"}`}
+            style={{ fontSize: 12, padding: "5px 14px" }}
+            onClick={() => setShowCreateProposal((v) => !v)}
+          >
+            {showCreateProposal ? "✕ Cancel" : "+ New Proposal"}
+          </button>
+        </div>
       </div>
+
+      {showCreateProposal && (
+        <CreateProposalPanel
+          votingPower={govData.votingPower}
+          totalSupply={govData.totalSupply}
+          governorAddress={ADDRESSES.rwaGovernor}
+        />
+      )}
 
       {proposals.length === 0 && (
         <div className="card" style={{ textAlign: "center", padding: "32px 24px" }}>

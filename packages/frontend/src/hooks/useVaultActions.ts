@@ -25,6 +25,7 @@ export function useApproveAssetToken(owner?: Address) {
         abi: ASSET_TOKEN_ABI,
         functionName: "approve",
         args: [ADDRESSES.rwaVault, maxUint256],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -42,6 +43,7 @@ export function useVaultDeposit(receiver?: Address) {
         abi: RWA_VAULT_ABI,
         functionName: "deposit",
         args: [parseUnits(assets, 18), receiver!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -59,6 +61,7 @@ export function useVaultRedeem(owner?: Address) {
         abi: RWA_VAULT_ABI,
         functionName: "redeem",
         args: [parseUnits(shares, 18), owner!, owner!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
