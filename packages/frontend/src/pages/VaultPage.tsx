@@ -159,7 +159,7 @@ export function VaultPage() {
   const handleDeposit = async () => {
     if (!depositAmt) return;
     if (needsApprove) {
-      await approveTx.approve(depositAmt);
+      await approveTx.approve();
       await refetch();
     }
     await depositTx.deposit(depositAmt);

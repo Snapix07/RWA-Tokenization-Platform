@@ -1,45 +1,13 @@
-import { useState } from "react";
-import { useWriteContract, useWaitForTransactionReceipt, useReadContracts } from "wagmi";
+import { useWriteContract, useReadContracts } from "wagmi";
 import { parseUnits, maxUint256 } from "viem";
 import { type Address } from "viem";
 import { ADDRESSES } from "../config/addresses";
 import { ASSET_TOKEN_ABI, RWA_AMM_ABI } from "../config/abis";
+import { useTx, type TxStatus } from "./useTx";
 
-export type TxStatus = "idle" | "pending" | "success" | "error";
+export type { TxStatus };
 
-function useTx() {
-  const { writeContractAsync } = useWriteContract();
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [status, setStatus] = useState<TxStatus>("idle");
-  const [errMsg, setErrMsg] = useState("");
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const send = async (fn: () => Promise<`0x${string}`>) => {
-    try {
-      setStatus("pending");
-      setErrMsg("");
-      const txHash = await fn();
-      setHash(txHash);
-      setStatus("success");
-    } catch (e: unknown) {
-      setStatus("error");
-      if (e instanceof Error) {
-        if (e.message.includes("User rejected")) setErrMsg("Transaction rejected.");
-        else if (e.message.includes("insufficient")) setErrMsg("Insufficient balance.");
-        else if (e.message.includes("INSUFFICIENT_OUTPUT"))
-          setErrMsg("Slippage too high. Try a smaller amount.");
-        else setErrMsg(e.message.slice(0, 120));
-      }
-    }
-  };
-
-  return { send, hash, status, errMsg, isConfirming, isConfirmed, writeContractAsync };
-}
-
-export function useApproveForAmm(tokenAddress: Address, owner?: Address) {
+export function useApproveForAmm(tokenAddress: Address) {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
 

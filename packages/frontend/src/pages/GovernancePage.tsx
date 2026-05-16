@@ -270,7 +270,7 @@ export function GovernancePage() {
   const [delegateInput, setDelegateInput] = useState("");
 
   const govData = useGovernanceData(address);
-  const delegateTx = useDelegate(address);
+  const delegateTx = useDelegate();
 
   // Subgraph: assetTokens (react-query + graphql-request, с Authorization header)
   const {

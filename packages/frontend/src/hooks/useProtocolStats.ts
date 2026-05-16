@@ -55,6 +55,7 @@ export function useProtocolStats() {
       },
     ],
   });
+  console.log("protocol stats data:", data);
 
   const totalSupply = data?.[0]?.result as bigint | undefined;
   const assetPrice = data?.[1]?.result as [bigint, bigint] | undefined;

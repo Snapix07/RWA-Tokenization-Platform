@@ -81,7 +81,7 @@ export function AmmPage() {
     swapDirection === "AtoB" &&
     safeParse(swapAmt) > amm.allowanceA;
 
-  const approveA = useApproveForAmm(ADDRESSES.assetToken, address);
+  const approveA = useApproveForAmm(ADDRESSES.assetToken);
   const swapTx = useAmmSwap(address);
   const addLiqTx = useAddLiquidity(address);
   const removeLiqTx = useRemoveLiquidity(address);
