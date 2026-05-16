@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { formatUnits } from "viem";
 import { type Address } from "viem";
+import { useQuery } from "@tanstack/react-query";
 import { ADDRESSES } from "../config/addresses";
 import { RWA_GOVERNOR_ABI } from "../config/abis";
 import {
@@ -11,40 +12,13 @@ import {
   PROPOSAL_STATES,
 } from "../hooks/useGovernance";
 import { TxButton } from "../components/TxButton";
-import { useQuery } from "urql";
-
-// ── Subgraph query для пропозалов ─────────────────────────────────────────
-const PROPOSALS_QUERY = `
-  query {
-    governanceProposals(
-      orderBy: voteEnd
-      orderDirection: desc
-      first: 20
-    ) {
-      id
-      proposalId
-      proposer
-      description
-      forVotes
-      againstVotes
-      abstainVotes
-      voteEnd
-      state
-    }
-  }
-`;
-
-interface SubgraphProposal {
-  id: string;
-  proposalId: string;
-  proposer: string;
-  description: string;
-  forVotes: string;
-  againstVotes: string;
-  abstainVotes: string;
-  voteEnd: string;
-  state: number;
-}
+import {
+  querySubgraph,
+  ASSETS_QUERY,
+  GOVERNANCE_PROPOSALS_QUERY,
+  type SubgraphAsset,
+  type SubgraphProposal,
+} from "../config/subgraph";
 
 function fmt(raw: bigint | undefined, digits = 2) {
   if (raw === undefined) return "—";
@@ -298,12 +272,27 @@ export function GovernancePage() {
   const govData = useGovernanceData(address);
   const delegateTx = useDelegate(address);
 
-  // Subgraph запрос
-  const [{ data: subgraphData, fetching, error: subgraphError }] = useQuery({
-    query: PROPOSALS_QUERY,
+  // Subgraph: assetTokens (react-query + graphql-request, с Authorization header)
+  const {
+    data: assetsData,
+    isLoading: subgraphFetching,
+    error: subgraphError,
+  } = useQuery({
+    queryKey: ["subgraph-assets"],
+    queryFn: () => querySubgraph<{ assetTokens: SubgraphAsset[] }>(ASSETS_QUERY),
+    staleTime: 30_000,
   });
 
-  const proposals: SubgraphProposal[] = subgraphData?.governanceProposals ?? [];
+  // Subgraph: governanceProposals (появятся как только будут созданы on-chain)
+  const { data: proposalsData } = useQuery({
+    queryKey: ["subgraph-proposals"],
+    queryFn: () =>
+      querySubgraph<{ governanceProposals: SubgraphProposal[] }>(GOVERNANCE_PROPOSALS_QUERY),
+    staleTime: 30_000,
+  });
+
+  const assets: SubgraphAsset[] = assetsData?.assetTokens ?? [];
+  const proposals: SubgraphProposal[] = proposalsData?.governanceProposals ?? [];
 
   const isSelfDelegated = govData.delegateTo?.toLowerCase() === address?.toLowerCase();
 
@@ -372,8 +361,8 @@ export function GovernancePage() {
         </div>
         <div className="card">
           <div className="card__title">Proposals</div>
-          <div className="card__value">{fetching ? "…" : proposals.length}</div>
-          <div className="card__sub">From subgraph</div>
+          <div className="card__value">{proposals.length}</div>
+          <div className="card__sub">On-chain</div>
         </div>
       </div>
 
@@ -438,7 +427,7 @@ export function GovernancePage() {
         </div>
       </div>
 
-      {/* Proposals list */}
+      {/* ── Registered Assets — from The Graph ───────────────────────── */}
       <div
         style={{
           marginBottom: 16,
@@ -447,13 +436,13 @@ export function GovernancePage() {
           alignItems: "center",
         }}
       >
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-h)" }}>Proposals</h2>
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-h)" }}>Registered Assets</h2>
         <span style={{ fontSize: 12, color: "var(--text)" }}>📡 Indexed via The Graph</span>
       </div>
 
-      {fetching && (
-        <div className="card" style={{ textAlign: "center", padding: 32, color: "var(--text)" }}>
-          Loading proposals from subgraph…
+      {subgraphFetching && (
+        <div className="card" style={{ textAlign: "center", padding: 24, color: "var(--text)" }}>
+          Loading assets from subgraph…
         </div>
       )}
 
@@ -464,16 +453,72 @@ export function GovernancePage() {
             background: "var(--danger-bg)",
             borderColor: "var(--danger)",
             color: "var(--danger)",
-            fontSize: 14,
-            padding: "14px 20px",
+            fontSize: 13,
+            padding: "12px 16px",
+            marginBottom: 24,
           }}
         >
-          ⚠️ Could not load proposals from subgraph.{" "}
+          ⚠️ Could not load assets from subgraph.{" "}
           <span style={{ opacity: 0.7 }}>{subgraphError.message}</span>
         </div>
       )}
 
-      {!fetching && !subgraphError && proposals.length === 0 && (
+      {!subgraphFetching && !subgraphError && assets.length === 0 && (
+        <div className="card" style={{ textAlign: "center", padding: "24px", marginBottom: 24 }}>
+          <div style={{ fontSize: 13, color: "var(--text)" }}>
+            No assets indexed yet. Assets created via AssetFactory will appear here.
+          </div>
+        </div>
+      )}
+
+      {!subgraphFetching && assets.length > 0 && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ color: "var(--text)", textAlign: "left" }}>
+                <th style={{ padding: "6px 8px", fontWeight: 600 }}>Asset ID</th>
+                <th style={{ padding: "6px 8px", fontWeight: 600 }}>Address</th>
+                <th style={{ padding: "6px 8px", fontWeight: 600 }}>Deterministic</th>
+                <th style={{ padding: "6px 8px", fontWeight: 600 }}>Deployed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assets.map((a) => (
+                <tr
+                  key={a.id}
+                  style={{ borderTop: "1px solid var(--border)", color: "var(--text-h)" }}
+                >
+                  <td style={{ padding: "8px 8px", fontFamily: "monospace", fontSize: 12 }}>
+                    {a.assetId.slice(0, 10)}…
+                  </td>
+                  <td style={{ padding: "8px 8px", fontFamily: "monospace", fontSize: 12 }}>
+                    {a.id.slice(0, 8)}…{a.id.slice(-4)}
+                  </td>
+                  <td style={{ padding: "8px 8px" }}>{a.deterministic ? "✓ CREATE2" : "CREATE"}</td>
+                  <td style={{ padding: "8px 8px" }}>
+                    {new Date(Number(a.deployedAt) * 1000).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Proposals list ────────────────────────────────────────────── */}
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-h)" }}>Proposals</h2>
+        <span style={{ fontSize: 12, color: "var(--text)" }}>⛓ On-chain state</span>
+      </div>
+
+      {proposals.length === 0 && (
         <div className="card" style={{ textAlign: "center", padding: "32px 24px" }}>
           <div style={{ fontSize: 28, marginBottom: 10 }}>🏛️</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: "var(--text-h)", marginBottom: 6 }}>
@@ -485,8 +530,9 @@ export function GovernancePage() {
         </div>
       )}
 
-      {!fetching &&
-        proposals.map((p) => <ProposalCard key={p.id} proposal={p} userAddress={address} />)}
+      {proposals.map((p) => (
+        <ProposalCard key={p.id} proposal={p} userAddress={address} />
+      ))}
 
       {/* Links */}
       <div style={{ marginTop: 16, fontSize: 13, color: "var(--text)", display: "flex", gap: 20 }}>

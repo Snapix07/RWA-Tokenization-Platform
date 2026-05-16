@@ -11,6 +11,8 @@ import {
   useRemoveLiquidity,
 } from "../hooks/useAmmActions";
 import { TxButton } from "../components/TxButton";
+import { useQuery } from "@tanstack/react-query";
+import { querySubgraph, AMM_SWAPS_QUERY, type SubgraphSwap } from "../config/subgraph";
 
 type Tab = "swap" | "liquidity";
 
@@ -83,6 +85,14 @@ export function AmmPage() {
   const swapTx = useAmmSwap(address);
   const addLiqTx = useAddLiquidity(address);
   const removeLiqTx = useRemoveLiquidity(address);
+  const { data: swapsData, isLoading: swapsLoading } = useQuery({
+    queryKey: ["amm-swaps"],
+    queryFn: () => querySubgraph<{ ammSwaps: SubgraphSwap[] }>(AMM_SWAPS_QUERY),
+    staleTime: 20_000,
+    refetchInterval: 30_000, // автообновление каждые 30 сек
+  });
+
+  const recentSwaps = swapsData?.ammSwaps ?? [];
 
   const handleSwap = async () => {
     if (!swapAmt || !tokenIn) return;
@@ -420,6 +430,81 @@ export function AmmPage() {
         >
           {ADDRESSES.rwaAmm} ↗
         </a>
+      </div>
+
+      <div style={{ marginTop: 32 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-h)" }}>Recent Swaps</h2>
+          <span style={{ fontSize: 12, color: "var(--text)" }}>📡 Indexed via The Graph</span>
+        </div>
+
+        {swapsLoading && (
+          <div className="card" style={{ textAlign: "center", padding: 24, color: "var(--text)" }}>
+            Loading swap history…
+          </div>
+        )}
+
+        {!swapsLoading && recentSwaps.length === 0 && (
+          <div className="card" style={{ textAlign: "center", padding: 24 }}>
+            <div style={{ fontSize: 13, color: "var(--text)" }}>
+              No swaps yet. Be the first to swap!
+            </div>
+          </div>
+        )}
+
+        {recentSwaps.length > 0 && (
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr
+                  style={{
+                    background: "var(--bg-surface-2)",
+                    color: "var(--text)",
+                    textAlign: "left",
+                  }}
+                >
+                  <th style={{ padding: "10px 14px", fontWeight: 600 }}>Sender</th>
+                  <th style={{ padding: "10px 14px", fontWeight: 600 }}>Amount In</th>
+                  <th style={{ padding: "10px 14px", fontWeight: 600 }}>Amount Out</th>
+                  <th style={{ padding: "10px 14px", fontWeight: 600 }}>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentSwaps.map((swap) => (
+                  <tr
+                    key={swap.id}
+                    style={{ borderTop: "1px solid var(--border)", color: "var(--text-h)" }}
+                  >
+                    <td style={{ padding: "10px 14px", fontFamily: "monospace", fontSize: 12 }}>
+                      {swap.sender.slice(0, 6)}…{swap.sender.slice(-4)}
+                    </td>
+                    <td style={{ padding: "10px 14px" }}>
+                      {parseFloat(formatUnits(BigInt(swap.amountIn), 18)).toFixed(4)}
+                    </td>
+                    <td style={{ padding: "10px 14px", color: "var(--success)" }}>
+                      {parseFloat(formatUnits(BigInt(swap.amountOut), 18)).toFixed(4)}
+                    </td>
+                    <td style={{ padding: "10px 14px", color: "var(--text)", fontSize: 12 }}>
+                      {new Date(Number(swap.timestamp) * 1000).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
