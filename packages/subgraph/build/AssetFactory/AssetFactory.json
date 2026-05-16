@@ -1,0 +1,36 @@
+[
+  {
+    "type": "event",
+    "name": "TokenDeployed",
+    "anonymous": false,
+    "inputs": [
+      {
+        "name": "assetId",
+        "type": "bytes32",
+        "indexed": true
+      },
+      {
+        "name": "proxy",
+        "type": "address",
+        "indexed": true
+      },
+      {
+        "name": "deterministic",
+        "type": "bool",
+        "indexed": false
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "getDeployedTokens",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address[]"
+      }
+    ]
+  }
+]
