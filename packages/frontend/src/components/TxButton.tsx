@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { useToast } from "./Toast";
 import { type TxStatus } from "../hooks/useVaultActions";
 
 interface Props {
@@ -7,15 +9,10 @@ interface Props {
   errMsg: string;
   label: string;
   loadingLabel?: string;
+  successMessage?: string; // кастомное сообщение для тоста
   onClick: () => void;
   disabled?: boolean;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "⏳ Waiting for wallet…",
-  success: "✅ Submitted!",
-  error: "❌ Failed",
-};
 
 export function TxButton({
   status,
@@ -24,10 +21,38 @@ export function TxButton({
   errMsg,
   label,
   loadingLabel,
+  successMessage,
   onClick,
   disabled,
 }: Props) {
+  const toast = useToast();
+  const prevConfirmed = useRef(false);
+  const prevStatus = useRef<TxStatus>("idle");
+
+  // Стреляем тостами при изменении статуса
+  useEffect(() => {
+    // Успешно подтверждено
+    if (isConfirmed && !prevConfirmed.current) {
+      toast.success("Transaction confirmed!", successMessage ?? `${label} completed successfully.`);
+    }
+    prevConfirmed.current = isConfirmed;
+  }, [isConfirmed, label, successMessage, toast]);
+
+  useEffect(() => {
+    // Ошибка
+    if (status === "error" && prevStatus.current !== "error" && errMsg) {
+      toast.error("Transaction failed", errMsg);
+    }
+    prevStatus.current = status;
+  }, [status, errMsg, toast]);
+
   const busy = status === "pending" || isConfirming;
+
+  const getBtnLabel = () => {
+    if (isConfirming) return "⛓ Confirming…";
+    if (status === "pending") return loadingLabel ?? "⏳ Waiting for wallet…";
+    return label;
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -37,18 +62,15 @@ export function TxButton({
         disabled={disabled || busy}
         onClick={onClick}
       >
-        {isConfirming
-          ? "⛓ Confirming on-chain…"
-          : status === "pending"
-            ? (loadingLabel ?? "⏳ Waiting…")
-            : label}
+        {getBtnLabel()}
       </button>
 
+      {/* Inline статус — остаётся под кнопкой для визуальной связи */}
       {status !== "idle" && (
         <div
           style={{
-            fontSize: 13,
-            padding: "8px 12px",
+            fontSize: 12,
+            padding: "7px 11px",
             borderRadius: 6,
             background:
               status === "error"
@@ -62,13 +84,16 @@ export function TxButton({
                 : isConfirmed
                   ? "var(--success)"
                   : "var(--accent)",
+            lineHeight: 1.4,
           }}
         >
           {isConfirmed
-            ? "✅ Transaction confirmed!"
+            ? "✅ Confirmed on-chain"
             : status === "error"
               ? errMsg || "Transaction failed."
-              : STATUS_LABELS[status]}
+              : isConfirming
+                ? "⛓ Waiting for block confirmation…"
+                : "⏳ Check your wallet…"}
         </div>
       )}
     </div>

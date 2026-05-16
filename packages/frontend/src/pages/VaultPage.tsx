@@ -6,6 +6,12 @@ import { ADDRESSES } from "../config/addresses";
 import { ASSET_TOKEN_ABI, RWA_VAULT_ABI } from "../config/abis";
 import { useApproveAssetToken, useVaultDeposit, useVaultRedeem } from "../hooks/useVaultActions";
 import { TxButton } from "../components/TxButton";
+import { useQuery } from "@tanstack/react-query";
+import {
+  querySubgraph,
+  VAULT_POSITIONS_QUERY,
+  type SubgraphVaultPosition,
+} from "../config/subgraph";
 
 function fmt(raw: bigint | undefined, dec = 18, digits = 4) {
   if (raw === undefined) return "—";
@@ -138,6 +144,17 @@ export function VaultPage() {
   const approveTx = useApproveAssetToken(address);
   const depositTx = useVaultDeposit(address);
   const redeemTx = useVaultRedeem(address);
+  const { data: positionData, isLoading: positionLoading } = useQuery({
+    queryKey: ["vault-position", address],
+    queryFn: () =>
+      querySubgraph<{ vaultPositions: SubgraphVaultPosition[] }>(VAULT_POSITIONS_QUERY, {
+        user: address?.toLowerCase(),
+      }),
+    enabled: !!address,
+    staleTime: 20_000,
+  });
+
+  const myPositions = positionData?.vaultPositions ?? [];
 
   const handleDeposit = async () => {
     if (!depositAmt) return;
@@ -380,6 +397,105 @@ export function VaultPage() {
           {ADDRESSES.rwaVault} ↗
         </a>
       </div>
+
+      {address && (
+        <div style={{ marginTop: 32 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--text-h)" }}>
+              My Vault Position
+            </h2>
+            <span style={{ fontSize: 12, color: "var(--text)" }}>📡 Indexed via The Graph</span>
+          </div>
+
+          {positionLoading && (
+            <div
+              className="card"
+              style={{ textAlign: "center", padding: 24, color: "var(--text)" }}
+            >
+              Loading position history…
+            </div>
+          )}
+
+          {!positionLoading && myPositions.length === 0 && (
+            <div className="card" style={{ textAlign: "center", padding: 24 }}>
+              <div style={{ fontSize: 13, color: "var(--text)" }}>
+                No vault activity yet. Make a deposit to see your position here.
+              </div>
+            </div>
+          )}
+
+          {myPositions.map((pos) => {
+            const deposited = parseFloat(formatUnits(BigInt(pos.totalDeposited), 18));
+            const withdrawn = parseFloat(formatUnits(BigInt(pos.totalWithdrawn), 18));
+            const shares = parseFloat(formatUnits(BigInt(pos.sharesBalance), 18));
+            const net = deposited - withdrawn;
+
+            return (
+              <div key={pos.id} className="card">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 4 }}>
+                      Total Deposited
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-h)" }}>
+                      {deposited.toFixed(4)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 4 }}>
+                      Total Withdrawn
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "var(--danger)" }}>
+                      {withdrawn.toFixed(4)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 4 }}>
+                      Shares Balance
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: "var(--success)" }}>
+                      {shares.toFixed(6)}
+                    </div>
+                  </div>
+                </div>
+
+                <hr className="divider" style={{ margin: "14px 0" }} />
+
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: "var(--text)" }}>
+                    Net position:{" "}
+                    <span
+                      style={{
+                        color: net >= 0 ? "var(--success)" : "var(--danger)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {net >= 0 ? "+" : ""}
+                      {net.toFixed(4)}
+                    </span>
+                  </span>
+                  <span style={{ color: "var(--text)", fontSize: 12 }}>
+                    Last updated:{" "}
+                    {new Date(Number(pos.lastUpdated) * 1000).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
