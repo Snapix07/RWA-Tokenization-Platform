@@ -1,29 +1,29 @@
 import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   TokenDeployed as TokenDeployedEvent,
-} from "../../generated/AssetFactory/AssetFactory";
+} from "../generated/AssetFactory/AssetFactory";
 import {
   Deposit as DepositEvent,
   Withdraw as WithdrawEvent,
-} from "../../generated/RWAVault/RWAVault";
+} from "../generated/RWAVault/RWAVault";
 import {
   Swap as SwapEvent,
   Sync as SyncEvent,
-} from "../../generated/RWAAMM/RWAAMM";
+} from "../generated/RWAAMM/RWAAMM";
 import {
   ProposalCreated as ProposalCreatedEvent,
   VoteCast as VoteCastEvent,
   ProposalQueued as ProposalQueuedEvent,
   ProposalExecuted as ProposalExecutedEvent,
   ProposalCanceled as ProposalCanceledEvent,
-} from "../../generated/RWAGovernor/RWAGovernor";
+} from "../generated/RWAGovernor/RWAGovernor";
 import {
   AssetToken,
   VaultPosition,
   AmmSwap,
   GovernanceProposal,
   ProposalVote,
-} from "../../generated/schema";
+} from "../generated/schema";
 
 // ---------------------------------------------------------------------------
 // AssetFactory — handleTokenDeployed
@@ -84,8 +84,8 @@ let _reserveA: BigInt = BigInt.zero();
 let _reserveB: BigInt = BigInt.zero();
 
 export function handleSync(event: SyncEvent): void {
-  _reserveA = BigInt.fromI32(event.params.reserveA as i32);
-  _reserveB = BigInt.fromI32(event.params.reserveB as i32);
+  _reserveA = event.params.reserveA;
+  _reserveB = event.params.reserveB;
 }
 
 export function handleSwap(event: SwapEvent): void {

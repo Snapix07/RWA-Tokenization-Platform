@@ -1,6 +1,7 @@
 [
   {
     "type": "event", "name": "Deposit",
+    "anonymous": false,
     "inputs": [
       { "name": "sender",  "type": "address", "indexed": true },
       { "name": "owner",   "type": "address", "indexed": true },
@@ -10,6 +11,7 @@
   },
   {
     "type": "event", "name": "Withdraw",
+    "anonymous": false,
     "inputs": [
       { "name": "sender",   "type": "address", "indexed": true },
       { "name": "receiver", "type": "address", "indexed": true },
@@ -20,6 +22,7 @@
   },
   {
     "type": "event", "name": "YieldCollected",
+    "anonymous": false,
     "inputs": [
       { "name": "manager", "type": "address", "indexed": true },
       { "name": "amount",  "type": "uint256", "indexed": false }
@@ -27,6 +30,7 @@
   },
   {
     "type": "event", "name": "Transfer",
+    "anonymous": false,
     "inputs": [
       { "name": "from",  "type": "address", "indexed": true },
       { "name": "to",    "type": "address", "indexed": true },
