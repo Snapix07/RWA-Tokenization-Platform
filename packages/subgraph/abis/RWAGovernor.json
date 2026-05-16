@@ -1,6 +1,7 @@
 [
   {
     "type": "event", "name": "ProposalCreated",
+    "anonymous": false,
     "inputs": [
       { "name": "proposalId",  "type": "uint256",   "indexed": false },
       { "name": "proposer",    "type": "address",   "indexed": false },
@@ -15,6 +16,7 @@
   },
   {
     "type": "event", "name": "VoteCast",
+    "anonymous": false,
     "inputs": [
       { "name": "voter",      "type": "address", "indexed": true },
       { "name": "proposalId", "type": "uint256", "indexed": false },
@@ -25,10 +27,12 @@
   },
   {
     "type": "event", "name": "ProposalExecuted",
+    "anonymous": false,
     "inputs": [{ "name": "proposalId", "type": "uint256", "indexed": false }]
   },
   {
     "type": "event", "name": "ProposalQueued",
+    "anonymous": false,
     "inputs": [
       { "name": "proposalId",  "type": "uint256", "indexed": false },
       { "name": "etaSeconds",  "type": "uint256", "indexed": false }
@@ -36,6 +40,7 @@
   },
   {
     "type": "event", "name": "ProposalCanceled",
+    "anonymous": false,
     "inputs": [{ "name": "proposalId", "type": "uint256", "indexed": false }]
   },
   {

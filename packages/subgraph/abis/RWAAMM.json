@@ -2,6 +2,7 @@
   {
     "type": "event",
     "name": "Swap",
+    "anonymous": false,
     "inputs": [
       { "name": "sender",    "type": "address", "indexed": true },
       { "name": "tokenIn",   "type": "address", "indexed": true },
@@ -12,6 +13,7 @@
   {
     "type": "event",
     "name": "LiquidityAdded",
+    "anonymous": false,
     "inputs": [
       { "name": "provider",  "type": "address", "indexed": true },
       { "name": "amountA",   "type": "uint256", "indexed": false },
@@ -22,6 +24,7 @@
   {
     "type": "event",
     "name": "LiquidityRemoved",
+    "anonymous": false,
     "inputs": [
       { "name": "provider",  "type": "address", "indexed": true },
       { "name": "amountA",   "type": "uint256", "indexed": false },
@@ -32,6 +35,7 @@
   {
     "type": "event",
     "name": "Sync",
+    "anonymous": false,
     "inputs": [
       { "name": "reserveA", "type": "uint112", "indexed": false },
       { "name": "reserveB", "type": "uint112", "indexed": false }
