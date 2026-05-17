@@ -1,4 +1,4 @@
-import { useReadContracts, useWriteContract } from "wagmi";
+import { useReadContracts, useWriteContract, usePublicClient } from "wagmi";
 import { type Address, keccak256, toBytes } from "viem";
 import { ADDRESSES } from "../config/addresses";
 import { GOVERNANCE_TOKEN_ABI, RWA_GOVERNOR_ABI } from "../config/abis";
@@ -115,22 +115,52 @@ export function usePropose() {
 export function useQueueProposal() {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
   const queue = (
     targets: Address[],
     values: bigint[],
     calldatas: `0x${string}`[],
     description: string,
+    expectedProposalId?: string,
   ) =>
-    tx.send(() =>
-      writeContractAsync({
+    tx.send(async () => {
+      const descHash = keccak256(toBytes(description));
+
+      const computedId = (await publicClient!.readContract({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "hashProposal",
+        args: [targets, values, calldatas, descHash],
+      })) as bigint;
+
+      if (expectedProposalId && computedId.toString() !== expectedProposalId) {
+        throw new Error(
+          `Parameter mismatch!\n` +
+            `Expected ID: ${expectedProposalId}\n` +
+            `Computed ID: ${computedId.toString()}\n` +
+            `targets: ${JSON.stringify(targets)}\n` +
+            `values: ${JSON.stringify(values.map(String))}\n` +
+            `calldatas: ${JSON.stringify(calldatas)}\n` +
+            `descHash: ${descHash}\n` +
+            `description: ${JSON.stringify(description)}`,
+        );
+      }
+
+      await publicClient!.simulateContract({
         address: ADDRESSES.rwaGovernor,
         abi: RWA_GOVERNOR_ABI,
         functionName: "queue",
-        args: [targets, values, calldatas, keccak256(toBytes(description))],
-        maxFeePerGas: 100_000_000n,
-      }),
-    );
+        args: [targets, values, calldatas, descHash],
+      });
+      return writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "queue",
+        args: [targets, values, calldatas, descHash],
+        maxFeePerGas: 200_000_000n,
+      });
+    });
 
   return { ...tx, queue };
 }
@@ -138,6 +168,7 @@ export function useQueueProposal() {
 export function useExecuteProposal() {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
 
   const execute = (
     targets: Address[],
@@ -145,15 +176,25 @@ export function useExecuteProposal() {
     calldatas: `0x${string}`[],
     description: string,
   ) =>
-    tx.send(() =>
-      writeContractAsync({
+    tx.send(async () => {
+      const descHash = keccak256(toBytes(description));
+      const totalValue = values.reduce((acc, v) => acc + v, 0n);
+      await publicClient!.simulateContract({
         address: ADDRESSES.rwaGovernor,
         abi: RWA_GOVERNOR_ABI,
         functionName: "execute",
-        args: [targets, values, calldatas, keccak256(toBytes(description))],
-        maxFeePerGas: 100_000_000n,
-      }),
-    );
+        args: [targets, values, calldatas, descHash],
+        value: totalValue,
+      });
+      return writeContractAsync({
+        address: ADDRESSES.rwaGovernor,
+        abi: RWA_GOVERNOR_ABI,
+        functionName: "execute",
+        args: [targets, values, calldatas, descHash],
+        value: totalValue,
+        maxFeePerGas: 200_000_000n,
+      });
+    });
 
   return { ...tx, execute };
 }

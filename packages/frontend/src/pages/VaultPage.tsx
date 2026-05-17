@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useReadContract, usePublicClient } from "wagmi";
 import { useReadContracts } from "wagmi";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits, parseUnits, keccak256, stringToHex } from "viem";
+import { type Address } from "viem";
 import { ADDRESSES } from "../config/addresses";
 import { ASSET_TOKEN_ABI, RWA_VAULT_ABI } from "../config/abis";
-import { useApproveAssetToken, useVaultDeposit, useVaultRedeem } from "../hooks/useVaultActions";
+import {
+  useApproveAssetToken,
+  useVaultDeposit,
+  useVaultRedeem,
+  useMintAssetToken,
+} from "../hooks/useVaultActions";
 import { TxButton } from "../components/TxButton";
+
+const ISSUER_ROLE = keccak256(stringToHex("ISSUER_ROLE")) as `0x${string}`;
 import { useQuery } from "@tanstack/react-query";
 import {
   querySubgraph,
@@ -22,53 +30,48 @@ function fmt(raw: bigint | undefined, dec = 18, digits = 4) {
 
 export function VaultPage() {
   const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
 
   const [depositAmt, setDepositAmt] = useState("");
   const [redeemAmt, setRedeemAmt] = useState("");
+  const [mintAmt, setMintAmt] = useState("");
+  const [mintTo, setMintTo] = useState("");
 
-  // ── Read data ──────────────────────────────────────────────────────────
   const { data, refetch } = useReadContracts({
     contracts: [
-      // [0] user assetToken balance
       {
         address: ADDRESSES.assetToken,
         abi: ASSET_TOKEN_ABI,
         functionName: "balanceOf",
         args: [address!],
       },
-      // [1] user vault shares
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
         functionName: "balanceOf",
         args: [address!],
       },
-      // [2] vault totalAssets
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
         functionName: "totalAssets",
       },
-      // [3] vault totalSupply (shares)
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
         functionName: "totalSupply",
       },
-      // [4] navPerShare
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
         functionName: "navPerShare",
       },
-      // [5] allowance assetToken → vault
       {
         address: ADDRESSES.assetToken,
         abi: ASSET_TOKEN_ABI,
         functionName: "allowance",
         args: [address!, ADDRESSES.rwaVault],
       },
-      // [6] previewDeposit
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
@@ -85,7 +88,6 @@ export function VaultPage() {
             : 0n,
         ],
       },
-      // [7] previewRedeem
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
@@ -102,13 +104,11 @@ export function VaultPage() {
             : 0n,
         ],
       },
-      // [8] assetToken symbol
       {
         address: ADDRESSES.assetToken,
         abi: ASSET_TOKEN_ABI,
         functionName: "symbol",
       },
-      // [9] paused
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
@@ -140,10 +140,18 @@ export function VaultPage() {
       }
     })();
 
-  // ── Actions ────────────────────────────────────────────────────────────
+  const { data: isIssuer } = useReadContract({
+    address: ADDRESSES.assetToken,
+    abi: ASSET_TOKEN_ABI,
+    functionName: "hasRole",
+    args: [ISSUER_ROLE, address!],
+    query: { enabled: !!address },
+  });
+
   const approveTx = useApproveAssetToken(address);
   const depositTx = useVaultDeposit(address);
   const redeemTx = useVaultRedeem(address);
+  const mintTx = useMintAssetToken();
   const { data: positionData, isLoading: positionLoading } = useQuery({
     queryKey: ["vault-position", address],
     queryFn: () =>
@@ -159,7 +167,9 @@ export function VaultPage() {
   const handleDeposit = async () => {
     if (!depositAmt) return;
     if (needsApprove) {
-      await approveTx.approve();
+      const approveHash = await approveTx.approve();
+      if (!approveHash) return;
+      await publicClient!.waitForTransactionReceipt({ hash: approveHash });
       await refetch();
     }
     await depositTx.deposit(depositAmt);
@@ -171,6 +181,14 @@ export function VaultPage() {
     if (!redeemAmt) return;
     await redeemTx.redeem(redeemAmt);
     setRedeemAmt("");
+    refetch();
+  };
+
+  const handleMint = async () => {
+    const recipient = (mintTo || address) as Address;
+    if (!mintAmt || !recipient) return;
+    await mintTx.mint(recipient, mintAmt);
+    setMintAmt("");
     refetch();
   };
 
@@ -206,7 +224,6 @@ export function VaultPage() {
         </div>
       )}
 
-      {/* Stats row */}
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <div className="card">
           <div className="card__title">Your {symbol ?? "ETHBOND"}</div>
@@ -230,9 +247,7 @@ export function VaultPage() {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="grid-2">
-        {/* Deposit */}
         <div className="card">
           <div className="section-title">⬇️ Deposit</div>
 
@@ -315,7 +330,6 @@ export function VaultPage() {
           </div>
         </div>
 
-        {/* Redeem */}
         <div className="card">
           <div className="section-title">⬆️ Redeem</div>
 
@@ -385,7 +399,46 @@ export function VaultPage() {
         </div>
       </div>
 
-      {/* Vault contract link */}
+      {isIssuer && (
+        <div className="card" style={{ marginTop: 24, borderColor: "var(--accent-border)" }}>
+          <div className="section-title">🪙 Mint {symbol ?? "ETHBOND"} (Issuer)</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="input-group">
+              <label className="input-label">Recipient address (blank = your wallet)</label>
+              <input
+                className="input-field"
+                placeholder={address}
+                value={mintTo}
+                onChange={(e) => setMintTo(e.target.value)}
+                style={{ fontFamily: "monospace", fontSize: 12 }}
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">Amount</label>
+              <input
+                className="input-field"
+                type="number"
+                min="0"
+                placeholder="0.0"
+                value={mintAmt}
+                onChange={(e) => setMintAmt(e.target.value)}
+              />
+            </div>
+            <TxButton
+              label={`Mint ${mintAmt || "0"} ${symbol ?? "ETHBOND"}`}
+              loadingLabel="⏳ Minting…"
+              successMessage="Minted successfully!"
+              status={mintTx.status}
+              isConfirming={mintTx.isConfirming}
+              isConfirmed={mintTx.isConfirmed}
+              errMsg={mintTx.errMsg}
+              disabled={!mintAmt || Number(mintAmt) <= 0}
+              onClick={handleMint}
+            />
+          </div>
+        </div>
+      )}
+
       <div style={{ marginTop: 16, fontSize: 13, color: "var(--text)" }}>
         Vault contract:{" "}
         <a

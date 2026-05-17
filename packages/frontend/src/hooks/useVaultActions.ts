@@ -67,3 +67,21 @@ export function useVaultRedeem(owner?: Address) {
 
   return { ...tx, redeem };
 }
+
+export function useMintAssetToken() {
+  const tx = useTx();
+  const { writeContractAsync } = useWriteContract();
+
+  const mint = (to: Address, amount: string) =>
+    tx.send(() =>
+      writeContractAsync({
+        address: ADDRESSES.assetToken,
+        abi: ASSET_TOKEN_ABI,
+        functionName: "mint",
+        args: [to, parseUnits(amount, 18)],
+        maxFeePerGas: 100_000_000n,
+      }),
+    );
+
+  return { ...tx, mint };
+}

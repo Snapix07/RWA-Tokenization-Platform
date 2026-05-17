@@ -15,7 +15,7 @@ interface Toast {
   type: ToastType;
   title: string;
   message?: string;
-  duration?: number; // ms, default 5000
+  duration?: number;
 }
 
 interface ToastContextValue {
@@ -26,8 +26,6 @@ interface ToastContextValue {
   info: (title: string, message?: string) => void;
 }
 
-// ── Context ───────────────────────────────────────────────────────────────────
-
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export function useToast(): ToastContextValue {
@@ -35,8 +33,6 @@ export function useToast(): ToastContextValue {
   if (!ctx) throw new Error("useToast must be used within <ToastProvider>");
   return ctx;
 }
-
-// ── Single Toast Item ─────────────────────────────────────────────────────────
 
 const ICONS: Record<ToastType, string> = {
   success: "✅",
@@ -81,7 +77,6 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   }, [onRemove, toast.id]);
 
   useEffect(() => {
-    // Mount animation
     const t = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(t);
   }, []);
@@ -117,7 +112,6 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
       }}
       onClick={dismiss}
     >
-      {/* Coloured left bar */}
       <div
         style={{
           position: "absolute",
@@ -179,7 +173,6 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
         ×
       </button>
 
-      {/* Progress bar */}
       <div
         style={{
           position: "absolute",
@@ -194,8 +187,6 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
     </div>
   );
 }
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 
 let _nextId = 1;
 
@@ -232,7 +223,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ addToast, success, error, warning, info }}>
       {children}
 
-      {/* Toast container — fixed bottom-right */}
       <div
         style={{
           position: "fixed",
@@ -252,7 +242,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         ))}
       </div>
 
-      {/* Progress bar keyframe */}
       <style>{`
         @keyframes toast-progress {
           from { width: 100%; }

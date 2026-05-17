@@ -3,20 +3,16 @@ import { request, gql } from "graphql-request";
 const SUBGRAPH_URL =
   "https://api.studio.thegraph.com/query/1753381/rwa-tokenezation-platform/version/latest";
 
-// Authorization header — без него The Graph Studio отдаёт HTML вместо данных
 const SUBGRAPH_HEADERS = {
   Authorization: "Bearer c6c170a8fe6381c89fcd277b0834e7e6",
 };
 
-/** Универсальная функция запроса к субграфу */
 export async function querySubgraph<T>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
   return request<T>(SUBGRAPH_URL, query, variables, SUBGRAPH_HEADERS);
 }
-
-// ── Готовые запросы ───────────────────────────────────────────────────────
 
 export const ASSETS_QUERY = gql`
   query GetAssets {
@@ -65,6 +61,7 @@ export const GOVERNANCE_PROPOSALS_QUERY = gql`
       proposalId
       proposer
       targets
+      values
       calldatas
       description
       forVotes
@@ -78,8 +75,6 @@ export const GOVERNANCE_PROPOSALS_QUERY = gql`
     }
   }
 `;
-
-// ── TypeScript типы ───────────────────────────────────────────────────────
 
 export interface SubgraphAsset {
   id: string;
@@ -114,6 +109,7 @@ export interface SubgraphProposal {
   proposalId: string;
   proposer: string;
   targets: string[];
+  values: string[];
   calldatas: string[];
   description: string;
   forVotes: string;
