@@ -309,13 +309,13 @@ export const RWA_AMM_ABI = [
     outputs: [{ name: "amountOut", type: "uint256" }],
   },
   {
-    name: "swap",
+    name: "swapExactTokensForTokens",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "tokenIn", type: "address" },
       { name: "amountIn", type: "uint256" },
       { name: "amountOutMin", type: "uint256" },
+      { name: "tokenIn", type: "address" },
       { name: "to", type: "address" },
     ],
     outputs: [{ name: "amountOut", type: "uint256" }],
@@ -477,6 +477,47 @@ export const RWA_GOVERNOR_ABI = [
       { name: "descriptionHash", type: "bytes32" },
     ],
     outputs: [{ name: "proposalId", type: "uint256" }],
+  },
+  {
+    name: "hashProposal",
+    type: "function",
+    stateMutability: "pure",
+    inputs: [
+      { name: "targets", type: "address[]" },
+      { name: "values", type: "uint256[]" },
+      { name: "calldatas", type: "bytes[]" },
+      { name: "descriptionHash", type: "bytes32" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "GovernorNonexistentProposal",
+    type: "error",
+    inputs: [{ name: "proposalId", type: "uint256" }],
+  },
+  {
+    name: "GovernorUnexpectedProposalState",
+    type: "error",
+    inputs: [
+      { name: "proposalId", type: "uint256" },
+      { name: "current", type: "uint8" },
+      { name: "expectedStates", type: "bytes32" },
+    ],
+  },
+  { name: "GovernorQueueNotImplemented", type: "error", inputs: [] },
+  { name: "GovernorAlreadyCastVote", type: "error", inputs: [{ name: "voter", type: "address" }] },
+  {
+    name: "GovernorRestrictedProposer",
+    type: "error",
+    inputs: [{ name: "proposer", type: "address" }],
+  },
+  {
+    name: "TimelockUnexpectedOperationState",
+    type: "error",
+    inputs: [
+      { name: "operationId", type: "bytes32" },
+      { name: "expectedStates", type: "bytes32" },
+    ],
   },
   {
     name: "ProposalCreated",

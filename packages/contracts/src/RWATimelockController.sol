@@ -4,8 +4,9 @@ pragma solidity ^0.8.24;
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /// @title RWATimelockController
-/// @notice Thin wrapper around OZ TimelockController with a hardcoded 2-day minimum delay.
-///         Keeping it as a named contract gives a clean Basescan artifact and a place to
+/// @notice Thin wrapper around OZ TimelockController.
+///         MIN_DELAY is set to 1 minute for live lifecycle testing.
+///         Keeping it as a named contract gives a clean Arbiscan artifact and a place to
 ///         add project-specific cancellation logic if needed.
 ///
 /// Deployment sequence:
@@ -16,7 +17,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 ///
 /// Design patterns: Timelock.
 contract RWATimelockController is TimelockController {
-    uint256 public constant MIN_DELAY = 2 days;
+    uint256 public constant MIN_DELAY = 1 minutes; // 60 s — testing lifecycle
 
     /// @param proposers  Initially empty; the Governor is added after deployment.
     /// @param executors  Pass [address(0)] to allow anyone to execute ready proposals.

@@ -26,7 +26,6 @@ export function useProtocolStats() {
         abi: ASSET_TOKEN_ABI,
         functionName: "paused",
       },
-      // Vault
       {
         address: ADDRESSES.rwaVault,
         abi: RWA_VAULT_ABI,
@@ -42,7 +41,6 @@ export function useProtocolStats() {
         abi: RWA_VAULT_ABI,
         functionName: "navPerShare",
       },
-      // AMM
       {
         address: ADDRESSES.rwaAmm,
         abi: RWA_AMM_ABI,
@@ -55,6 +53,7 @@ export function useProtocolStats() {
       },
     ],
   });
+  console.log("protocol stats data:", data);
 
   const totalSupply = data?.[0]?.result as bigint | undefined;
   const assetPrice = data?.[1]?.result as [bigint, bigint] | undefined;

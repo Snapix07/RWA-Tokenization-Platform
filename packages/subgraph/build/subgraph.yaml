@@ -9,9 +9,9 @@ dataSources:
     name: AssetFactory
     network: arbitrum-sepolia
     source:
-      address: "0x0d41539C9B43cd675dEBBC3dB8754e26ec274eDF"
+      address: "0xfC83C440Bd3Cd8b6FC5ABB5f1E7a67f38F3A0f7d"
       abi: AssetFactory
-      startBlock: 268346764
+      startBlock: 269083041
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -29,9 +29,9 @@ dataSources:
     name: RWAVault
     network: arbitrum-sepolia
     source:
-      address: "0xFbECEB9447925e0c2e433f5eD674F7110AF67018"
+      address: "0x7d71cAa220df8aFe473393Ab646e0fF11ce3cB82"
       abi: RWAVault
-      startBlock: 268346800
+      startBlock: 269083071
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -51,9 +51,9 @@ dataSources:
     name: RWAAMM
     network: arbitrum-sepolia
     source:
-      address: "0x658eD17F2686A652ACC89162c7aA99b957e7938E"
+      address: "0xd56101f885ADe6B501C47DA940d8EFC972666554"
       abi: RWAAMM
-      startBlock: 268346812
+      startBlock: 269083084
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -73,9 +73,9 @@ dataSources:
     name: RWAGovernor
     network: arbitrum-sepolia
     source:
-      address: "0x091858adb6f82c323c4B4d1b0aA59Cec953B9E75"
+      address: "0x4DAc8bc9d16665D4AED79bfc62c22dD7CA4Fa072"
       abi: RWAGovernor
-      startBlock: 268346836
+      startBlock: 269083110
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
