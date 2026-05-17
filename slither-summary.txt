@@ -1,0 +1,145 @@
+=== SLITHER ANALYSIS SUMMARY ===
+Total Findings: 22
+By Severity:
+  High: 0
+  Medium: 10
+  Low: 3
+  Informational: 8
+  Gas/Optimization: 1
+
+⚠️  WARNING: 10 Medium-severity findings detected. Review required before submission.
+
+Findings:
+
+---
+[M-01] divide-before-multiply (Medium)
+Description: RWAAMM.addLiquidity() performs a multiplication on the result of a division
+             — amountAOptimal = (amountBDesired * rA) / rB — risking precision loss.
+File: src/RWAAMM.sol:73
+
+---
+[M-02] divide-before-multiply (Medium)
+Description: RWAAMM.addLiquidity() — second instance: result of division used in
+             subsequent multiplication (amountBOptimal path), risking precision loss.
+File: src/RWAAMM.sol:73
+
+---
+[M-03] incorrect-equality (Medium)
+Description: RWAAMM.removeLiquidity() uses dangerous strict equality:
+             amountA == 0 || amountB == 0 (src/RWAAMM.sol#139). Strict equality on
+             computed values can be exploited or cause silent no-ops.
+File: src/RWAAMM.sol:123
+
+---
+[M-04] incorrect-equality (Medium)
+Description: RWAAMM.swapExactTokensForTokens() uses dangerous strict equality:
+             amountOut == 0 || amountOut >= reserveOut (src/RWAAMM.sol#170).
+File: src/RWAAMM.sol:155
+
+---
+[M-05] incorrect-equality (Medium)
+Description: RWAAMM.addLiquidity() uses dangerous strict equality:
+             rA == 0 && rB == 0 (src/RWAAMM.sol#84) to detect empty pool.
+File: src/RWAAMM.sol:73
+
+---
+[M-06] incorrect-equality (Medium)
+Description: RWAVault._deposit() uses dangerous strict equality:
+             assets == 0 (src/RWAVault.sol#124).
+File: src/RWAVault.sol:118
+
+---
+[M-07] incorrect-equality (Medium)
+Description: RWAAMM.getAmountOut() uses dangerous strict equality:
+             reserveIn == 0 || reserveOut == 0 (src/RWAAMM.sol#196).
+File: src/RWAAMM.sol:191
+
+---
+[M-08] unused-return (Medium)
+Description: AssetTokenV1.getAssetPrice() ignores the return value of
+             $.oracle.getPrice($.assetId) (src/AssetTokenV1.sol#127).
+File: src/AssetTokenV1.sol:125
+
+---
+[M-09] unused-return (Medium)
+Description: RWAVault.navPerShare() ignores return value of
+             $.oracle.getPrice($.assetId) — price18 captured but not fully used.
+File: src/RWAVault.sol:161
+
+---
+[M-10] unused-return (Medium)
+Description: ChainlinkOracleAdapter.getPrice() ignores return value of
+             IChainlinkAggregator.latestRoundData() — some tuple fields unused.
+File: src/ChainlinkOracleAdapter.sol:76
+
+---
+[L-01] events-maths (Low)
+Description: MockAggregator.setDecimals() should emit an event for state change
+             (_decimals = decimals_).
+File: src/mocks/MockAggregator.sol:67
+
+---
+[L-02] events-maths (Low)
+Description: MockAggregator.setAnswer() should emit an event for state change
+             (_answer = answer).
+File: src/mocks/MockAggregator.sol:56
+
+---
+[L-03] events-maths (Low)
+Description: MockAggregator.setUpdatedAt() should emit an event for state change
+             (_updatedAt = updatedAt).
+File: src/mocks/MockAggregator.sol:63
+
+---
+[I-01] assembly (Informational)
+Description: AssetFactory._deployWithCreate2Assembly() uses inline assembly
+             (INLINE ASM src/AssetFactory.sol#158-161).
+File: src/AssetFactory.sol:156
+
+---
+[I-02] assembly (Informational)
+Description: AssetTokenV1._getStorage() uses inline assembly
+             (INLINE ASM src/AssetTokenV1.sol#55-57).
+File: src/AssetTokenV1.sol:50
+
+---
+[I-03] assembly (Informational)
+Description: ChainlinkOracleAdapter._normalizePriceAssembly() uses inline assembly
+             (INLINE ASM src/ChainlinkOracleAdapter.sol#114-122).
+File: src/ChainlinkOracleAdapter.sol:112
+
+---
+[I-04] assembly (Informational)
+Description: RWAVault._getStorage() uses inline assembly
+             (INLINE ASM src/RWAVault.sol#55-57).
+File: src/RWAVault.sol:52
+
+---
+[I-05] assembly (Informational)
+Description: AssetFactory._deployWithCreateAssembly() uses inline assembly
+             (INLINE ASM src/AssetFactory.sol#167-170).
+File: src/AssetFactory.sol:165
+
+---
+[I-06] assembly (Informational)
+Description: RWAAMM._sqrt() uses inline assembly
+             (INLINE ASM src/RWAAMM.sol#236-247).
+File: src/RWAAMM.sol:234
+
+---
+[I-07] assembly (Informational)
+Description: AssetTokenV2._getV2Storage() uses inline assembly
+             (INLINE ASM src/AssetTokenV2.sol#39-41).
+File: src/AssetTokenV2.sol:34
+
+---
+[I-08] naming-convention (Informational)
+Description: Function GovernanceToken.CLOCK_MODE() is not in mixedCase
+             (all-caps function name violates Solidity naming convention).
+File: src/GovernanceToken.sol:49
+
+---
+[G-01] immutable-states (Gas/Optimization)
+Description: MockAggregator.owner (src/mocks/MockAggregator.sol#14) should be
+             declared immutable to save SLOAD gas on every read.
+File: src/mocks/MockAggregator.sol:14
