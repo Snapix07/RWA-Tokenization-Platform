@@ -54,8 +54,6 @@ export function AmmPage() {
 
   const amm = useAmmData(address);
 
-  // Contract: tokenA=GOV (reserves[0]), tokenB=ETHBOND (reserves[1])
-  // UI: AtoB = ETHBOND→GOV, so reserveIn=ETHBOND=reserves[1], tokenIn=tokenB
   const reserveIn = swapDirection === "AtoB" ? amm.reserves?.[1] : amm.reserves?.[0];
   const reserveOut = swapDirection === "AtoB" ? amm.reserves?.[0] : amm.reserves?.[1];
   const tokenIn = swapDirection === "AtoB" ? amm.tokenB : amm.tokenA;
@@ -78,8 +76,6 @@ export function AmmPage() {
     return (Number(rB) / Number(rA)).toFixed(6);
   }, [amm.reserves]);
 
-  // AtoB = ETHBOND→GOV: need ETHBOND (allowanceA) approved
-  // BtoA = GOV→ETHBOND: need GOV (allowanceB) approved
   const swapNeedsApproveA =
     swapAmt && swapDirection === "AtoB" && (!amm.allowanceA || safeParse(swapAmt) > amm.allowanceA);
   const swapNeedsApproveB =
@@ -95,7 +91,7 @@ export function AmmPage() {
     queryKey: ["amm-swaps"],
     queryFn: () => querySubgraph<{ ammSwaps: SubgraphSwap[] }>(AMM_SWAPS_QUERY),
     staleTime: 20_000,
-    refetchInterval: 30_000, // автообновление каждые 30 сек
+    refetchInterval: 30_000,
   });
 
   const recentSwaps = swapsData?.ammSwaps ?? [];

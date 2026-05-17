@@ -9,7 +9,7 @@ interface Props {
   errMsg: string;
   label: string;
   loadingLabel?: string;
-  successMessage?: string; // кастомное сообщение для тоста
+  successMessage?: string;
   onClick: () => void;
   disabled?: boolean;
 }
@@ -29,9 +29,7 @@ export function TxButton({
   const prevConfirmed = useRef(false);
   const prevStatus = useRef<TxStatus>("idle");
 
-  // Стреляем тостами при изменении статуса
   useEffect(() => {
-    // Успешно подтверждено
     if (isConfirmed && !prevConfirmed.current) {
       toast.success("Transaction confirmed!", successMessage ?? `${label} completed successfully.`);
     }
@@ -39,7 +37,6 @@ export function TxButton({
   }, [isConfirmed, label, successMessage, toast]);
 
   useEffect(() => {
-    // Ошибка
     if (status === "error" && prevStatus.current !== "error" && errMsg) {
       toast.error("Transaction failed", errMsg);
     }
@@ -65,7 +62,6 @@ export function TxButton({
         {getBtnLabel()}
       </button>
 
-      {/* Inline статус — остаётся под кнопкой для визуальной связи */}
       {status !== "idle" && (
         <div
           style={{

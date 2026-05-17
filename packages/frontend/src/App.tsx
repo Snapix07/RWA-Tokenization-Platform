@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navbar } from "./components/layout/Navbar";
 import { Sidebar } from "./components/layout/Sidebar";
 import { NetworkGuard } from "./components/layout/NetworkGuard";
-import { ToastProvider } from "./components/Toast"; // ← добавить
+import { ToastProvider } from "./components/Toast";
 import { DashboardPage } from "./pages/DashboardPage";
 import { VaultPage } from "./pages/VaultPage";
 import { AmmPage } from "./pages/AmmPage";
@@ -13,7 +13,6 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
         {" "}
-        {/* ← обернуть */}
         <Navbar />
         <div className="layout">
           <Sidebar />
@@ -28,7 +27,6 @@ export default function App() {
           </main>
         </div>
       </ToastProvider>{" "}
-      {/* ← обернуть */}
     </BrowserRouter>
   );
 }

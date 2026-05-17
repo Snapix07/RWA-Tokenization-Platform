@@ -53,7 +53,6 @@ export function useAddLiquidity(recipient?: Address) {
         address: ADDRESSES.rwaAmm,
         abi: RWA_AMM_ABI,
         functionName: "addLiquidity",
-        // Contract: tokenA=GOV, tokenB=ETHBOND — pass GOV first, ETHBOND second
         args: [parseUnits(govAmount, 18), parseUnits(ethbondAmount, 18), 0n, 0n, recipient!],
         maxFeePerGas: 100_000_000n,
       }),

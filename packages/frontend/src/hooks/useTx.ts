@@ -4,10 +4,6 @@ import { parseError } from "../lib/parseError";
 
 export type TxStatus = "idle" | "pending" | "success" | "error";
 
-/**
- * Shared transaction hook — используется во всех action-хуках.
- * Централизует error parsing через parseError().
- */
 export function useTx() {
   const { writeContractAsync } = useWriteContract();
   const [hash, setHash] = useState<`0x${string}` | undefined>();
@@ -27,6 +23,7 @@ export function useTx() {
       setStatus("success");
       return txHash;
     } catch (e: unknown) {
+      console.error("[useTx] transaction error:", e);
       setStatus("error");
       setErrMsg(parseError(e));
       return undefined;

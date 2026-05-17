@@ -58,13 +58,11 @@ export function DashboardPage() {
 
   return (
     <div>
-      {/* Page header */}
       <div className="page-header">
         <h1>Dashboard</h1>
         <p>Live overview of the RWA Tokenization Protocol on Arbitrum Sepolia.</p>
       </div>
 
-      {/* Protocol status badge */}
       <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
         <span className={`badge ${stats.token.paused ? "badge-defeated" : "badge-active"}`}>
           {stats.token.paused ? "⏸ Protocol Paused" : "● Protocol Active"}
@@ -74,7 +72,6 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* Global stats */}
       <h2
         style={{
           fontSize: 13,
@@ -119,7 +116,6 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* User balances */}
       {isConnected ? (
         <>
           <h2
@@ -168,7 +164,6 @@ export function DashboardPage() {
             />
           </div>
 
-          {/* Delegation nudge */}
           {!user.isLoading &&
             user.govBalance &&
             parseFloat(user.govBalance) > 0 &&
@@ -199,7 +194,6 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Contract addresses */}
       <h2
         style={{
           fontSize: 13,
@@ -273,14 +267,12 @@ export function DashboardPage() {
         </table>
       </div>
 
-      {/* Pulse animation for skeleton */}
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.4; }
         }
       `}</style>
-      {/* ── Live Activity ─────────────────────────────────── */}
       <h2
         style={{
           fontSize: 13,
@@ -296,7 +288,6 @@ export function DashboardPage() {
       </h2>
 
       <div className="grid-2" style={{ marginBottom: 24 }}>
-        {/* Recent Swaps */}
         <div className="card">
           <div
             style={{
@@ -351,7 +342,6 @@ export function DashboardPage() {
             ))}
         </div>
 
-        {/* Active Proposals */}
         <div className="card">
           <div
             style={{
