@@ -63,9 +63,20 @@ contract AssetFactory is AccessControl, Pausable {
         emit TokenDeployed(assetId, proxy, true);
     }
 
-    /// @notice Returns the address a deployAssetToken call would produce for a given assetId.
-    function predictAddress(bytes32 assetId) external view returns (address) {
-        bytes memory initData = abi.encodeCall(AssetTokenV1.initialize, ("", "", address(0), assetId, 0, address(0)));
+    /// @notice Returns the address a deployAssetToken call would produce.
+    ///         All parameters must match the intended deployAssetToken call exactly —
+    ///         the CREATE2 address is a function of the full initData, not just the assetId.
+    function predictAddress(
+        bytes32 assetId,
+        string calldata name_,
+        string calldata symbol_,
+        address oracle_,
+        uint256 maxSupply_,
+        address admin_
+    ) external view returns (address) {
+        bytes memory initData = abi.encodeCall(
+            AssetTokenV1.initialize, (name_, symbol_, oracle_, assetId, maxSupply_, admin_)
+        );
         bytes memory bytecode = abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(implementation, initData));
         bytes32 salt = keccak256(abi.encodePacked(assetId, block.chainid));
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));

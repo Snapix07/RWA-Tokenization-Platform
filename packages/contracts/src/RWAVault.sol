@@ -46,7 +46,6 @@ contract RWAVault is
     struct RWAVaultStorage {
         IChainlinkOracleAdapter oracle;
         bytes32 assetId;
-        uint256 accruedYield; // yield injected by YIELD_MANAGER, included in totalAssets
         uint256 depositCap; // max underlying tokens the vault accepts; 0 = uncapped
     }
 
@@ -111,9 +110,8 @@ contract RWAVault is
     // ERC-4626 core overrides
     // -------------------------------------------------------------------------
 
-    /// @dev totalAssets includes both the underlying token balance and any accrued yield.
     function totalAssets() public view override returns (uint256) {
-        return IERC20(asset()).balanceOf(address(this)) + _getStorage().accruedYield;
+        return IERC20(asset()).balanceOf(address(this));
     }
 
     /// @dev Blocks deposits when paused or when the deposit cap would be exceeded.
@@ -146,13 +144,11 @@ contract RWAVault is
     // Yield management
     // -------------------------------------------------------------------------
 
-    /// @notice Injects yield into the vault. Increases totalAssets without minting shares,
+    /// @notice Injects yield into the vault by pulling tokens from the caller.
+    ///         Increases totalAssets (via balanceOf) without minting shares,
     ///         which appreciates the share price for existing holders.
     function collectYield(uint256 amount) external onlyRole(YIELD_MANAGER_ROLE) {
         if (amount == 0) revert ZeroAmount();
-        // Effects first (CEI)
-        _getStorage().accruedYield += amount;
-        // Interaction: pull yield tokens from the manager
         IERC20(asset()).safeTransferFrom(msg.sender, address(this), amount);
         emit YieldCollected(msg.sender, amount);
     }

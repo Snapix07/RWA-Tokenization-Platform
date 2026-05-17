@@ -80,7 +80,7 @@ contract ChainlinkOracleAdapter is Ownable, Pausable {
 
         // Checks: validate answer and staleness before any state reads
         if (answer <= 0) revert InvalidAsset(assetId);
-        // forge-lint: disable-next-line(block-timestamp)
+        //slither-disable-next-line timestamp
         if (block.timestamp - ts > cfg.maxStaleness) revert StalePrice(ts, cfg.maxStaleness);
 
         uint8 feedDecimals = IChainlinkAggregator(cfg.feed).decimals();
@@ -121,6 +121,7 @@ contract ChainlinkOracleAdapter is Ownable, Pausable {
         }
     }
 
+    //slither-disable-next-line dead-code
     /// @dev Benchmark baseline — pure-Solidity equivalent of _normalizePriceAssembly.
     ///      Kept alongside the assembly version for the gas report; not called in production.
     function _normalizePriceSolidity(int256 answer, uint8 feedDecimals) internal pure returns (uint256) {
