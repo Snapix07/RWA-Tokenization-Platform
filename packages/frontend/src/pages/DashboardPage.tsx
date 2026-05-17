@@ -1,6 +1,9 @@
 import { useAccount } from "wagmi";
 import { useProtocolStats } from "../hooks/useProtocolStats";
 import { useUserBalances } from "../hooks/useUserBalances";
+import { useRecentSwaps, useActiveProposals } from "../hooks/useSubgraph";
+import { SubgraphBadge } from "../components/SubgraphBadge";
+import { formatUnits } from "viem";
 
 function fmt(value: string | null, decimals = 4): string {
   if (value === null) return "—";
@@ -47,19 +50,19 @@ export function DashboardPage() {
   const { address, isConnected } = useAccount();
   const stats = useProtocolStats();
   const user = useUserBalances(address);
+  const { swaps: recentSwaps, fetching: swapsFetching, error: swapsError } = useRecentSwaps(5);
+  const { proposals: activeProposals, fetching: proposalsFetching } = useActiveProposals();
   const updatedAgo = stats.token.updatedAt
     ? `${Math.round((Date.now() / 1000 - stats.token.updatedAt) / 60)}m ago`
     : "";
 
   return (
     <div>
-      {/* Page header */}
       <div className="page-header">
         <h1>Dashboard</h1>
         <p>Live overview of the RWA Tokenization Protocol on Arbitrum Sepolia.</p>
       </div>
 
-      {/* Protocol status badge */}
       <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
         <span className={`badge ${stats.token.paused ? "badge-defeated" : "badge-active"}`}>
           {stats.token.paused ? "⏸ Protocol Paused" : "● Protocol Active"}
@@ -69,7 +72,6 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* Global stats */}
       <h2
         style={{
           fontSize: 13,
@@ -114,7 +116,6 @@ export function DashboardPage() {
         />
       </div>
 
-      {/* User balances */}
       {isConnected ? (
         <>
           <h2
@@ -163,7 +164,6 @@ export function DashboardPage() {
             />
           </div>
 
-          {/* Delegation nudge */}
           {!user.isLoading &&
             user.govBalance &&
             parseFloat(user.govBalance) > 0 &&
@@ -194,7 +194,6 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Contract addresses */}
       <h2
         style={{
           fontSize: 13,
@@ -268,13 +267,138 @@ export function DashboardPage() {
         </table>
       </div>
 
-      {/* Pulse animation for skeleton */}
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50%       { opacity: 0.4; }
         }
       `}</style>
+      <h2
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          marginBottom: 12,
+          marginTop: 8,
+          opacity: 0.5,
+          letterSpacing: "0.07em",
+          textTransform: "uppercase",
+        }}
+      >
+        Live Activity
+      </h2>
+
+      <div className="grid-2" style={{ marginBottom: 24 }}>
+        <div className="card">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-h)" }}>
+              🔄 Recent Swaps
+            </span>
+            <SubgraphBadge fetching={swapsFetching} error={swapsError} />
+          </div>
+
+          {swapsError && (
+            <div style={{ fontSize: 13, color: "var(--text)", opacity: 0.6 }}>
+              Subgraph not connected.
+            </div>
+          )}
+
+          {!swapsError && swapsFetching && (
+            <div style={{ fontSize: 13, color: "var(--text)", opacity: 0.6 }}>Loading…</div>
+          )}
+
+          {!swapsError && !swapsFetching && recentSwaps.length === 0 && (
+            <div style={{ fontSize: 13, color: "var(--text)", opacity: 0.6 }}>No swaps yet.</div>
+          )}
+
+          {!swapsError &&
+            recentSwaps.map((swap) => (
+              <div
+                key={swap.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px 0",
+                  borderBottom: "1px solid var(--border)",
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ fontFamily: "var(--mono)", color: "var(--text)", fontSize: 12 }}>
+                  {swap.sender.slice(0, 6)}…{swap.sender.slice(-4)}
+                </span>
+                <span style={{ color: "var(--accent)", fontFamily: "var(--mono)", fontSize: 12 }}>
+                  {parseFloat(formatUnits(BigInt(swap.amountIn), 18)).toFixed(2)}
+                  {" → "}
+                  {parseFloat(formatUnits(BigInt(swap.amountOut), 18)).toFixed(2)}
+                </span>
+              </div>
+            ))}
+        </div>
+
+        <div className="card">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ fontWeight: 600, fontSize: 14, color: "var(--text-h)" }}>
+              🗳️ Active Proposals
+            </span>
+            <SubgraphBadge fetching={proposalsFetching} />
+          </div>
+
+          {!proposalsFetching && activeProposals.length === 0 && (
+            <div style={{ fontSize: 13, color: "var(--text)", opacity: 0.6 }}>
+              No active proposals.
+            </div>
+          )}
+
+          {activeProposals.map((p) => {
+            const forV = parseFloat(formatUnits(BigInt(p.forVotes), 18));
+            const agV = parseFloat(formatUnits(BigInt(p.againstVotes), 18));
+
+            return (
+              <div
+                key={p.id}
+                style={{
+                  padding: "9px 0",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <div
+                  style={{
+                    color: "var(--text-h)",
+                    fontWeight: 500,
+                    fontSize: 13,
+                    marginBottom: 5,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {p.description
+                    ? p.description.slice(0, 55) + (p.description.length > 55 ? "…" : "")
+                    : `Proposal #${p.proposalId.toString().slice(-6)}`}
+                </div>
+                <div style={{ display: "flex", gap: 12, fontSize: 12 }}>
+                  <span style={{ color: "var(--success)" }}>✓ For: {forV.toFixed(0)}</span>
+                  <span style={{ color: "var(--danger)" }}>✗ Against: {agV.toFixed(0)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

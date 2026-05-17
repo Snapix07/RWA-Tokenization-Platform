@@ -1,45 +1,13 @@
-import { useState } from "react";
-import { useWriteContract, useWaitForTransactionReceipt, useReadContracts } from "wagmi";
+import { useWriteContract, useReadContracts } from "wagmi";
 import { parseUnits, maxUint256 } from "viem";
 import { type Address } from "viem";
 import { ADDRESSES } from "../config/addresses";
-import { ASSET_TOKEN_ABI, RWA_AMM_ABI } from "../config/abis";
+import { ASSET_TOKEN_ABI, RWA_AMM_ABI, GOVERNANCE_TOKEN_ABI } from "../config/abis";
+import { useTx, type TxStatus } from "./useTx";
 
-export type TxStatus = "idle" | "pending" | "success" | "error";
+export type { TxStatus };
 
-function useTx() {
-  const { writeContractAsync } = useWriteContract();
-  const [hash, setHash] = useState<`0x${string}` | undefined>();
-  const [status, setStatus] = useState<TxStatus>("idle");
-  const [errMsg, setErrMsg] = useState("");
-
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash,
-  });
-
-  const send = async (fn: () => Promise<`0x${string}`>) => {
-    try {
-      setStatus("pending");
-      setErrMsg("");
-      const txHash = await fn();
-      setHash(txHash);
-      setStatus("success");
-    } catch (e: unknown) {
-      setStatus("error");
-      if (e instanceof Error) {
-        if (e.message.includes("User rejected")) setErrMsg("Transaction rejected.");
-        else if (e.message.includes("insufficient")) setErrMsg("Insufficient balance.");
-        else if (e.message.includes("INSUFFICIENT_OUTPUT"))
-          setErrMsg("Slippage too high. Try a smaller amount.");
-        else setErrMsg(e.message.slice(0, 120));
-      }
-    }
-  };
-
-  return { send, hash, status, errMsg, isConfirming, isConfirmed, writeContractAsync };
-}
-
-export function useApproveForAmm(tokenAddress: Address, owner?: Address) {
+export function useApproveForAmm(tokenAddress: Address) {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
 
@@ -50,6 +18,7 @@ export function useApproveForAmm(tokenAddress: Address, owner?: Address) {
         abi: ASSET_TOKEN_ABI,
         functionName: "approve",
         args: [ADDRESSES.rwaAmm, maxUint256],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -65,8 +34,9 @@ export function useAmmSwap(recipient?: Address) {
       writeContractAsync({
         address: ADDRESSES.rwaAmm,
         abi: RWA_AMM_ABI,
-        functionName: "swap",
-        args: [tokenIn, parseUnits(amountIn, 18), amountOutMin, recipient!],
+        functionName: "swapExactTokensForTokens",
+        args: [parseUnits(amountIn, 18), amountOutMin, tokenIn, recipient!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -77,13 +47,14 @@ export function useAddLiquidity(recipient?: Address) {
   const tx = useTx();
   const { writeContractAsync } = useWriteContract();
 
-  const addLiquidity = (amountA: string, amountB: string) =>
+  const addLiquidity = (ethbondAmount: string, govAmount: string) =>
     tx.send(() =>
       writeContractAsync({
         address: ADDRESSES.rwaAmm,
         abi: RWA_AMM_ABI,
         functionName: "addLiquidity",
-        args: [parseUnits(amountA, 18), parseUnits(amountB, 18), 0n, 0n, recipient!],
+        args: [parseUnits(govAmount, 18), parseUnits(ethbondAmount, 18), 0n, 0n, recipient!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -101,6 +72,7 @@ export function useRemoveLiquidity(recipient?: Address) {
         abi: RWA_AMM_ABI,
         functionName: "removeLiquidity",
         args: [parseUnits(liquidity, 18), 0n, 0n, recipient!],
+        maxFeePerGas: 100_000_000n,
       }),
     );
 
@@ -142,6 +114,12 @@ export function useAmmData(address?: Address) {
         functionName: "allowance",
         args: [address!, ADDRESSES.rwaAmm],
       },
+      {
+        address: ADDRESSES.governanceToken,
+        abi: GOVERNANCE_TOKEN_ABI,
+        functionName: "allowance",
+        args: [address!, ADDRESSES.rwaAmm],
+      },
     ],
     query: { enabled: !!address },
   });
@@ -152,6 +130,7 @@ export function useAmmData(address?: Address) {
   const totalLp = data?.[3]?.result as bigint | undefined;
   const userLp = data?.[4]?.result as bigint | undefined;
   const allowanceA = data?.[5]?.result as bigint | undefined;
+  const allowanceB = data?.[6]?.result as bigint | undefined;
 
   return {
     reserves,
@@ -160,6 +139,7 @@ export function useAmmData(address?: Address) {
     totalLp,
     userLp,
     allowanceA,
+    allowanceB,
     refetch,
   };
 }

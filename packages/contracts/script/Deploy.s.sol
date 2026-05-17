@@ -40,9 +40,8 @@ contract Deploy is Script {
     // -----------------------------------------------------------------------
 
     function run() external {
-        uint256 deployerKey = vm.envUint("PRIVATE_KEY");
-        address deployer = vm.addr(deployerKey);
-        vm.startBroadcast(deployerKey);
+        vm.startBroadcast();
+        address deployer = msg.sender;
 
         // 1. Governance token
         GovernanceToken govToken = new GovernanceToken(deployer, INITIAL_GOV_SUPPLY);
