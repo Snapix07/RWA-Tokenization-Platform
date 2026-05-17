@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IChainlinkAggregator} from "./interfaces/IChainlinkAggregator.sol";
+import {IChainlinkOracleAdapter} from "./interfaces/IChainlinkOracleAdapter.sol";
 import {InvalidAsset, OracleFeedUpdated, StalePrice, ZeroAddress} from "./interfaces/IRWATypes.sol";
 
 /// @title ChainlinkOracleAdapter
@@ -11,7 +12,7 @@ import {InvalidAsset, OracleFeedUpdated, StalePrice, ZeroAddress} from "./interf
 ///         normalization. Acts as the single oracle interface for all platform contracts.
 ///
 /// Design patterns: OracleAdapter (interface abstraction), Pausable (circuit breaker).
-contract ChainlinkOracleAdapter is Ownable, Pausable {
+contract ChainlinkOracleAdapter is IChainlinkOracleAdapter, Ownable, Pausable {
     // -------------------------------------------------------------------------
     // Storage
     // -------------------------------------------------------------------------
