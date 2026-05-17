@@ -16,11 +16,11 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 /// @title RWAGovernor
 /// @notice DAO Governor for the RWA Tokenization Platform.
 ///         Controls asset onboarding, oracle feed updates, vault parameters, and
-///         authorized issuer management — all routed through the 2-day Timelock.
+///         authorized issuer management — all routed through the Timelock.
 ///
-/// Parameters (Base Sepolia, ~2 s/block):
-///   Voting delay  : 43 200 blocks (~1 day)
-///   Voting period : 302 400 blocks (~1 week)
+/// Parameters (timestamp-based clock via GovernanceToken.clock()):
+///   Voting delay  : 60 s  (1 minute  — proposal sits Pending before voting opens)
+///   Voting period : 900 s (15 minutes — Active voting window)
 ///   Quorum        : 4% of total supply at proposal snapshot
 ///   Threshold     : 1% of total supply at time of proposal (computed dynamically)
 ///
@@ -36,8 +36,8 @@ contract RWAGovernor is
     constructor(IVotes token_, TimelockController timelock_)
         Governor("RWA DAO")
         GovernorSettings(
-            43_200, // voting delay  — ~1 day at 2 s/block on Base
-            302_400, // voting period — ~1 week at 2 s/block on Base
+            60, // voting delay  — 1 minute  (seconds, timestamp clock)
+            900, // voting period — 15 minutes (seconds, timestamp clock)
             0 // placeholder; overridden by proposalThreshold() below
         )
         GovernorVotes(token_)

@@ -9,6 +9,7 @@ import {
   Bytes,
   BigInt,
   BigDecimal,
+  Int8,
 } from "@graphprotocol/graph-ts";
 
 export class AssetToken extends Entity {
@@ -485,6 +486,19 @@ export class GovernanceProposal extends Entity {
 
   set targets(value: Array<Bytes>) {
     this.set("targets", Value.fromBytesArray(value));
+  }
+
+  get values(): Array<BigInt> {
+    let value = this.get("values");
+    if (!value || value.kind == ValueKind.NULL) {
+      throw new Error("Cannot return null for a required field.");
+    } else {
+      return value.toBigIntArray();
+    }
+  }
+
+  set values(value: Array<BigInt>) {
+    this.set("values", Value.fromBigIntArray(value));
   }
 
   get calldatas(): Array<Bytes> {
