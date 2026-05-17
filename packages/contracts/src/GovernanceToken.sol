@@ -39,4 +39,14 @@ contract GovernanceToken is ERC20, ERC20Permit, ERC20Votes, AccessControl {
     function nonces(address owner) public view override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
     }
+
+    // Use block.timestamp so Governor votingDelay/votingPeriod are in seconds, not blocks.
+    function clock() public view virtual override returns (uint48) {
+        return uint48(block.timestamp);
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function CLOCK_MODE() public view virtual override returns (string memory) {
+        return "mode=timestamp";
+    }
 }
