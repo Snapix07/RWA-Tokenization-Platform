@@ -69,7 +69,7 @@ jobs:
 
       - name: Coverage
         working-directory: packages/contracts
-        run: forge coverage
+        run: forge coverage --ir-minimum
 
   slither:
     name: Slither
