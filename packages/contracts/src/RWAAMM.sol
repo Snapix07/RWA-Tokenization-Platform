@@ -247,8 +247,8 @@ contract RWAAMM is ERC20, ReentrancyGuard, Pausable {
         }
     }
 
-    //slither-disable-next-line dead-code
     /// @dev Benchmark baseline — pure-Solidity equivalent of _sqrt. Not called in production.
+    //slither-disable-next-line dead-code
     function _sqrtSolidity(uint256 x) internal pure returns (uint256 z) {
         if (x == 0) return 0;
         z = x;

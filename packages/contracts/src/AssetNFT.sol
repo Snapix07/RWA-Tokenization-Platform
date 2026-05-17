@@ -43,6 +43,7 @@ contract AssetNFT is ERC721, ERC721URIStorage, ERC721Enumerable, AccessControl, 
         // Effects before interaction: _safeMint triggers onERC721Received on the recipient
         _tokenAssetId[tokenId] = assetId;
         _setTokenURI(tokenId, tokenURI_);
+        //slither-disable-next-line reentrancy-events
         _safeMint(to, tokenId);
         emit AssetCertificateMinted(tokenId, assetId, to);
     }

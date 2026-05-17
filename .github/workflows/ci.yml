@@ -91,6 +91,7 @@ jobs:
           target: packages/contracts
           solc-version: '0.8.24'
           fail-on: high
+          slither-config: packages/contracts/slither.config.json
 
   # Umbrella job — satisfies the "validate" required status check on protected branches
   validate:

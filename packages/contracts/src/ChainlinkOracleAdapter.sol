@@ -122,9 +122,9 @@ contract ChainlinkOracleAdapter is IChainlinkOracleAdapter, Ownable, Pausable {
         }
     }
 
-    //slither-disable-next-line dead-code
     /// @dev Benchmark baseline — pure-Solidity equivalent of _normalizePriceAssembly.
     ///      Kept alongside the assembly version for the gas report; not called in production.
+    //slither-disable-next-line dead-code
     function _normalizePriceSolidity(int256 answer, uint8 feedDecimals) internal pure returns (uint256) {
         if (feedDecimals < 18) {
             // casting to uint256 is safe: caller validates answer > 0 before this call
