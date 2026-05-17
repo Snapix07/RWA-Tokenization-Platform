@@ -40,9 +40,11 @@ contract AssetNFT is ERC721, ERC721URIStorage, ERC721Enumerable, AccessControl, 
         returns (uint256 tokenId)
     {
         tokenId = _nextTokenId++;
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI_);
+        // Effects before interaction: _safeMint triggers onERC721Received on the recipient
         _tokenAssetId[tokenId] = assetId;
+        _setTokenURI(tokenId, tokenURI_);
+        //slither-disable-next-line reentrancy-events
+        _safeMint(to, tokenId);
         emit AssetCertificateMinted(tokenId, assetId, to);
     }
 
@@ -86,6 +88,7 @@ contract AssetNFT is ERC721, ERC721URIStorage, ERC721Enumerable, AccessControl, 
         return super._update(to, tokenId, auth);
     }
 
+    //slither-disable-next-line dead-code
     function _increaseBalance(address account, uint128 value) internal override(ERC721, ERC721Enumerable) {
         super._increaseBalance(account, value);
     }

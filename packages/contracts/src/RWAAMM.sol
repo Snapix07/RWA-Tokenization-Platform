@@ -39,7 +39,6 @@ contract RWAAMM is ERC20, ReentrancyGuard, Pausable {
 
     uint112 private _reserveA;
     uint112 private _reserveB;
-    bool private _initialized;
 
     // -------------------------------------------------------------------------
     // Events
@@ -249,6 +248,7 @@ contract RWAAMM is ERC20, ReentrancyGuard, Pausable {
     }
 
     /// @dev Benchmark baseline — pure-Solidity equivalent of _sqrt. Not called in production.
+    //slither-disable-next-line dead-code
     function _sqrtSolidity(uint256 x) internal pure returns (uint256 z) {
         if (x == 0) return 0;
         z = x;
