@@ -119,21 +119,30 @@ contract GovernanceTokenFuzzTest is Test {
             100_000 ether
         );
 
+        vm.warp(1_700_000_000);
+
         vm.prank(alice);
         token.delegate(alice);
 
-        vm.roll(200);
+        vm.warp(block.timestamp + 1);
+        uint256 snapshotTimepoint = block.timestamp - 1;
 
-        uint256 snapshotBlock = 199;
-        uint256 historicalVotes = token.getPastVotes(alice, snapshotBlock);
+        uint256 historicalVotes =
+            token.getPastVotes(alice, snapshotTimepoint);
 
         vm.prank(alice);
         token.transfer(bob, transferAmount);
 
-        vm.roll(201);
+        vm.warp(block.timestamp + 1);
 
         assertEq(historicalVotes, 300_000 ether);
-        assertEq(token.getPastVotes(alice, snapshotBlock), 300_000 ether);
-        assertEq(token.getVotes(alice), 300_000 ether - transferAmount);
+        assertEq(
+            token.getPastVotes(alice, snapshotTimepoint),
+            300_000 ether
+        );
+        assertEq(
+            token.getVotes(alice),
+            300_000 ether - transferAmount
+        );
     }
 }

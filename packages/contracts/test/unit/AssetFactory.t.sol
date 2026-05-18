@@ -226,16 +226,44 @@ contract AssetFactoryTest is Test {
     }
 
     function test_PredictAddress_ReturnsStableAddressForSameAssetId() public view {
-        address firstPrediction = factory.predictAddress(ASSET_ID_1);
-        address secondPrediction = factory.predictAddress(ASSET_ID_1);
+        address firstPrediction = factory.predictAddress(
+            ASSET_ID_1,
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            address(oracle),
+            MAX_SUPPLY,
+            tokenAdmin
+        );
+        address secondPrediction = factory.predictAddress(
+            ASSET_ID_1,
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            address(oracle),
+            MAX_SUPPLY,
+            tokenAdmin
+        );
 
         assertEq(firstPrediction, secondPrediction);
         assertTrue(firstPrediction != address(0));
     }
 
     function test_PredictAddress_ReturnsDifferentAddressForDifferentAssetIds() public view {
-        address firstPrediction = factory.predictAddress(ASSET_ID_1);
-        address secondPrediction = factory.predictAddress(ASSET_ID_2);
+        address firstPrediction = factory.predictAddress(
+            ASSET_ID_1,
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            address(oracle),
+            MAX_SUPPLY,
+            tokenAdmin
+        );
+        address secondPrediction = factory.predictAddress(
+            ASSET_ID_2,
+            TOKEN_NAME,
+            TOKEN_SYMBOL,
+            address(oracle),
+            MAX_SUPPLY,
+            tokenAdmin
+        );
 
         assertTrue(firstPrediction != secondPrediction);
     }

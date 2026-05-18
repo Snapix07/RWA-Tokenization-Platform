@@ -38,9 +38,9 @@ contract RWAGovernorTest is Test {
     uint256 internal constant PROPOSER_BALANCE = 20_000 ether;
     uint256 internal constant VOTER_BALANCE = 100_000 ether;
 
-    uint256 internal constant VOTING_DELAY = 43_200;
-    uint256 internal constant VOTING_PERIOD = 302_400;
-    uint256 internal constant TIMELOCK_DELAY = 2 days;
+    uint256 internal constant VOTING_DELAY = 60;
+    uint256 internal constant VOTING_PERIOD = 900;
+    uint256 internal constant TIMELOCK_DELAY = 1 minutes;
 
     string internal constant DESCRIPTION = "Proposal: set governance target value to 42";
 
@@ -79,7 +79,7 @@ contract RWAGovernorTest is Test {
         token.delegate(voter);
 
         // Make all delegation checkpoints historical.
-        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1);
     }
 
     function _proposalPayload()
@@ -123,12 +123,12 @@ contract RWAGovernorTest is Test {
 
     function _moveToActive(uint256 proposalId) internal {
         uint256 snapshot = governor.proposalSnapshot(proposalId);
-        vm.roll(snapshot + 1);
+        vm.warp(snapshot + 1);
     }
 
     function _movePastDeadline(uint256 proposalId) internal {
         uint256 deadline = governor.proposalDeadline(proposalId);
-        vm.roll(deadline + 1);
+        vm.warp(deadline + 1);
     }
 
     function _passProposal(uint256 proposalId) internal {
@@ -167,13 +167,13 @@ contract RWAGovernorTest is Test {
     }
 
     function test_Quorum_EqualsFourPercentOfPastTotalSupply() public {
-        uint256 snapshotBlock = block.number - 1;
+        uint256 snapshotTimepoint = block.timestamp - 1;
 
-        assertEq(governor.quorum(snapshotBlock), 40_000 ether);
+        assertEq(governor.quorum(snapshotTimepoint), 40_000 ether);
     }
 
     function test_Propose_CreatesPendingProposalWithExpectedSnapshotAndDeadline() public {
-        uint256 currentBlock = block.number;
+        uint256 currentTimepoint = block.timestamp;
         uint256 proposalId = _createProposal();
 
         assertEq(
@@ -183,12 +183,12 @@ contract RWAGovernorTest is Test {
 
         assertEq(
             governor.proposalSnapshot(proposalId),
-            currentBlock + VOTING_DELAY
+            currentTimepoint + VOTING_DELAY
         );
 
         assertEq(
             governor.proposalDeadline(proposalId),
-            currentBlock + VOTING_DELAY + VOTING_PERIOD
+            currentTimepoint + VOTING_DELAY + VOTING_PERIOD
         );
 
         assertEq(governor.proposalProposer(proposalId), proposer);

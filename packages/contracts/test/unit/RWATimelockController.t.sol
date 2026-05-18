@@ -35,7 +35,7 @@ contract RWATimelockControllerTest is Test {
     address internal proposer = makeAddr("proposer");
     address internal attacker = makeAddr("attacker");
 
-    uint256 internal constant TWO_DAY_DELAY = 2 days;
+    uint256 internal constant MIN_DELAY = 1 minutes;
     uint256 internal constant THREE_DAY_DELAY = 3 days;
 
     bytes32 internal constant EMPTY_PREDECESSOR = bytes32(0);
@@ -82,13 +82,13 @@ contract RWATimelockControllerTest is Test {
             data,
             EMPTY_PREDECESSOR,
             salt,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
     }
 
-    function test_Constructor_UsesHardcodedTwoDayMinimumDelay() public view {
-        assertEq(timelock.MIN_DELAY(), TWO_DAY_DELAY);
-        assertEq(timelock.getMinDelay(), TWO_DAY_DELAY);
+    function test_Constructor_UsesHardcodedOneMinuteMinimumDelay() public view {
+        assertEq(timelock.MIN_DELAY(), MIN_DELAY);
+        assertEq(timelock.getMinDelay(), MIN_DELAY);
     }
 
     function test_Constructor_AssignsAdminRoleToConfiguredAdminAndSelf() public view {
@@ -119,7 +119,7 @@ contract RWATimelockControllerTest is Test {
 
         assertEq(
             timelock.getTimestamp(operationId),
-            block.timestamp + TWO_DAY_DELAY
+            block.timestamp + MIN_DELAY
         );
     }
 
@@ -135,7 +135,7 @@ contract RWATimelockControllerTest is Test {
             data,
             EMPTY_PREDECESSOR,
             SALT_ONE,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
     }
 
@@ -151,7 +151,7 @@ contract RWATimelockControllerTest is Test {
             data,
             EMPTY_PREDECESSOR,
             SALT_ONE,
-            TWO_DAY_DELAY - 1
+            MIN_DELAY - 1
         );
     }
 
@@ -166,7 +166,7 @@ contract RWATimelockControllerTest is Test {
             data,
             EMPTY_PREDECESSOR,
             SALT_ONE,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
 
         vm.expectRevert();
@@ -177,7 +177,7 @@ contract RWATimelockControllerTest is Test {
             data,
             EMPTY_PREDECESSOR,
             SALT_ONE,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
 
         vm.stopPrank();
@@ -203,7 +203,7 @@ contract RWATimelockControllerTest is Test {
     function test_Execute_AfterDelayRunsOperationAndMarksItDone() public {
         bytes32 operationId = _scheduleSetValue(42, SALT_ONE);
 
-        vm.warp(block.timestamp + TWO_DAY_DELAY);
+        vm.warp(block.timestamp + MIN_DELAY);
 
         bytes memory data = _setValueData(42);
 
@@ -226,7 +226,7 @@ contract RWATimelockControllerTest is Test {
     function test_Execute_RevertsWhenOperationIsExecutedTwice() public {
         _scheduleSetValue(42, SALT_ONE);
 
-        vm.warp(block.timestamp + TWO_DAY_DELAY);
+        vm.warp(block.timestamp + MIN_DELAY);
 
         bytes memory data = _setValueData(42);
 
@@ -279,7 +279,7 @@ contract RWATimelockControllerTest is Test {
         vm.prank(proposer);
         timelock.cancel(operationId);
 
-        vm.warp(block.timestamp + TWO_DAY_DELAY);
+        vm.warp(block.timestamp + MIN_DELAY);
 
         bytes memory data = _setValueData(42);
 
@@ -323,12 +323,12 @@ contract RWATimelockControllerTest is Test {
             payloads,
             EMPTY_PREDECESSOR,
             SALT_BATCH,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
 
         assertTrue(timelock.isOperationPending(operationId));
 
-        vm.warp(block.timestamp + TWO_DAY_DELAY);
+        vm.warp(block.timestamp + MIN_DELAY);
 
         vm.prank(attacker);
         timelock.executeBatch(
@@ -372,7 +372,7 @@ contract RWATimelockControllerTest is Test {
             firstData,
             EMPTY_PREDECESSOR,
             SALT_ONE,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
 
         timelock.schedule(
@@ -381,12 +381,12 @@ contract RWATimelockControllerTest is Test {
             secondData,
             firstOperationId,
             SALT_TWO,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
 
         vm.stopPrank();
 
-        vm.warp(block.timestamp + TWO_DAY_DELAY);
+        vm.warp(block.timestamp + MIN_DELAY);
 
         vm.prank(attacker);
         vm.expectRevert();
@@ -448,10 +448,10 @@ contract RWATimelockControllerTest is Test {
             updateDelayCall,
             EMPTY_PREDECESSOR,
             SALT_UPDATE_DELAY,
-            TWO_DAY_DELAY
+            MIN_DELAY
         );
 
-        vm.warp(block.timestamp + TWO_DAY_DELAY);
+        vm.warp(block.timestamp + MIN_DELAY);
 
         vm.prank(attacker);
         timelock.execute(
