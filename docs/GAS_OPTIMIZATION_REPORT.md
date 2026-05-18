@@ -470,31 +470,27 @@ Instead of micro-optimizations, focus on **Arbitrum advantages:**
 
 ## 8. Appendix: Forge Gas Report (Raw Data)
 
+The following report was generated using:
+
 ```bash
-$ forge test --gas-report
+forge test --gas-report
 ```
 
-**Example output (selected functions):**
-
-```
- │ AssetFactory                                                     ┌─────────┬──────────┬────────┬────────┬─────────┐
- │ ├─ deployAssetToken                             43,250    43,250   43,250   43,250   43,250   │
- │ AssetTokenV1                                                      ├─────────┼──────────┼────────┼────────┼─────────┤
- │ ├─ mint (non-batch)                              25,100    25,100   25,100   25,100   25,100  │
- │ ├─ burn                                           3,000     3,000    3,000    3,000    3,000   │
- │ RWAVault                                                          ├─────────┼──────────┼────────┼────────┼─────────┤
- │ ├─ deposit                                        9,960     9,960    9,960    9,960    9,960   │
- │ ├─ withdraw                                       8,940     8,940    8,940    8,940    8,940   │
- │ RWAAMM                                                            ├─────────┼──────────┼────────┼────────┼─────────┤
- │ ├─ swap                                           9,390     9,390    9,390    9,390    9,390   │
- │ ├─ addLiquidity                                   11,200    11,200   11,200   11,200   11,200  │
- │ ├─ removeLiquidity                                9,100     9,100    9,100    9,100    9,100   │
- │ RWAGovernor                                                       ├─────────┼──────────┼────────┼────────┼─────────┤
- │ ├─ castVote                                       3,320     3,320    3,320    3,320    3,320   │
- │ ChainlinkOracleAdapter                                            ├─────────┼──────────┼────────┼────────┼─────────┤
- │ ├─ getPrice (staleness check)                    2,800     2,800    2,800    2,800    2,800   │
- │ RWATimelockController                                             ├─────────┼──────────┼────────┼────────┼─────────┤
- │ ├─ execute                                        10,700    10,700   10,700   10,700   10,700  │
+```text
+| Contract | Function | Min Gas | Avg Gas | Max Gas |
+|---|---:|---:|---:|---:|
+| `RWAAMM` | `addLiquidity` | 24,962 | 84,842 | 199,533 |
+| `RWAAMM` | `removeLiquidity` | 24,761 | 79,323 | 79,352 |
+| `RWAAMM` | `swapExactTokensForTokens` | 24,902 | 69,936 | 69,967 |
+| `RWAVault` | `deposit` | 12,854 | 45,432 | 98,650 |
+| `RWAVault` | `mint` | 18,214 | 40,220 | 98,899 |
+| `RWAVault` | `redeem` | 3,411 | 42,443 | 42,444 |
+| `RWAVault` | `withdraw` | 13,375 | 44,046 | 44,047 |
+| `RWAGovernor` | `propose` | 37,229 | 72,891 | 77,240 |
+| `RWAGovernor` | `castVote` | 28,987 | 67,636 | 82,940 |
+| `RWAGovernor` | `queue` | 33,693 | 116,686 | 144,351 |
+| `RWATimelockController` | `schedule` | 25,697 | 50,088 | 56,371 |
+| `RWATimelockController` | `execute` | 28,517 | 51,080 | 83,726 |
 ```
 
 ---

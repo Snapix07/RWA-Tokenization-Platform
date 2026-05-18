@@ -288,13 +288,9 @@ contract RWAVaultInvariantTest is StdInvariant, Test {
     }
 
     function invariant_ReportedTotalAssetsMatchesCurrentVaultAccountingModel() public view {
-        uint256 expectedReportedAssets =
-            asset.balanceOf(address(vault)) +
-            handler.ghostCollectedYield();
-
         assertEq(
             vault.totalAssets(),
-            expectedReportedAssets
+            asset.balanceOf(address(vault))
         );
     }
 

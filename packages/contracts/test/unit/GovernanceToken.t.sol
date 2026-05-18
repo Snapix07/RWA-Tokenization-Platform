@@ -177,55 +177,74 @@ contract GovernanceTokenTest is Test {
     function test_GetPastVotes_ReturnsHistoricalDelegationSnapshot() public {
         uint256 amount = 200 ether;
 
-        // Create a clean, explicit checkpoint at block 10.
-        vm.roll(10);
+        // Delegate at a dedicated timestamp.
+        vm.warp(block.timestamp + 10);
 
         vm.prank(admin);
         governanceToken.delegate(admin);
 
-        // Block 10 is now strictly in the past.
-        vm.roll(11);
+        // Make delegation checkpoint historical.
+        vm.warp(block.timestamp + 10);
 
-        assertEq(governanceToken.clock(), 11);
-        assertEq(governanceToken.getPastVotes(admin, 10), INITIAL_SUPPLY);
+        uint256 snapshotBeforeTransfer = governanceToken.clock() - 1;
 
-        // Transfer happens at block 11, reducing admin's delegated voting power.
-        vm.prank(admin);
-        governanceToken.transfer(alice, amount);
-
-        // Block 11 becomes historical.
-        vm.roll(12);
-
-        assertEq(governanceToken.clock(), 12);
-        assertEq(governanceToken.getPastVotes(admin, 10), INITIAL_SUPPLY);
-        assertEq(governanceToken.getPastVotes(admin, 11), INITIAL_SUPPLY - amount);
-    }
-
-    function test_GetPastTotalSupply_PreservesSnapshotBeforeLaterMint() public {
-        // Move far enough from the setup block to avoid any boundary edge cases.
-        vm.roll(100);
-
-        // At block 99, only the constructor supply existed.
         assertEq(
-            governanceToken.getPastTotalSupply(99),
+            governanceToken.getPastVotes(admin, snapshotBeforeTransfer),
             INITIAL_SUPPLY
         );
 
-        // Mint additional tokens at block 101.
-        vm.roll(101);
+        // Transfer at a strictly later timestamp.
+        vm.warp(block.timestamp + 10);
+
+        vm.prank(admin);
+        governanceToken.transfer(alice, amount);
+
+        // Make transfer checkpoint historical.
+        vm.warp(block.timestamp + 10);
+
+        uint256 snapshotAfterTransfer = governanceToken.clock() - 1;
+
+        assertEq(
+            governanceToken.getPastVotes(admin, snapshotBeforeTransfer),
+            INITIAL_SUPPLY
+        );
+
+        assertEq(
+            governanceToken.getPastVotes(admin, snapshotAfterTransfer),
+            INITIAL_SUPPLY - amount
+        );
+    }
+
+    function test_GetPastTotalSupply_PreservesSnapshotBeforeLaterMint() public {
+        // Move forward so the constructor checkpoint is safely historical.
+        vm.warp(block.timestamp + 10);
+
+        uint256 snapshotBeforeMint = governanceToken.clock() - 1;
+
+        assertEq(
+            governanceToken.getPastTotalSupply(snapshotBeforeMint),
+            INITIAL_SUPPLY
+        );
+
+        // Mint at a strictly later timestamp.
+        vm.warp(block.timestamp + 10);
 
         vm.prank(admin);
         governanceToken.mint(alice, MINT_AMOUNT);
 
-        // Move forward so block 100 and 101 are both historical.
-        vm.roll(102);
+        // Make the mint checkpoint historical.
+        vm.warp(block.timestamp + 10);
 
-        assertEq(governanceToken.totalSupply(), INITIAL_SUPPLY + MINT_AMOUNT);
+        uint256 snapshotAfterMint = governanceToken.clock() - 1;
 
-        // Snapshot before the mint must still preserve the old total supply.
         assertEq(
-            governanceToken.getPastTotalSupply(100),
+            governanceToken.getPastTotalSupply(snapshotBeforeMint),
             INITIAL_SUPPLY
+        );
+
+        assertEq(
+            governanceToken.getPastTotalSupply(snapshotAfterMint),
+            INITIAL_SUPPLY + MINT_AMOUNT
         );
     }
 
