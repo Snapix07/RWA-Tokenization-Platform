@@ -69,7 +69,7 @@ jobs:
 
       - name: Coverage
         working-directory: packages/contracts
-        run: forge coverage
+        run: forge coverage --ir-minimum
 
   slither:
     name: Slither
@@ -89,7 +89,9 @@ jobs:
         uses: crytic/slither-action@v0.4.1
         with:
           target: packages/contracts
+          solc-version: '0.8.24'
           fail-on: high
+          slither-config: packages/contracts/slither.config.json
 
   # Umbrella job — satisfies the "validate" required status check on protected branches
   validate:

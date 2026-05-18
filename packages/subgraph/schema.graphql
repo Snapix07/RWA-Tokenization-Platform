@@ -2,7 +2,7 @@
 Entity 1 — AssetToken
 Tracks every RWA-backed ERC-20 deployed by the AssetFactory (TokenDeployed event).
 """
-type AssetToken @entity {
+type AssetToken @entity(immutable: false) {
   id: ID! # proxy address
   assetId: Bytes! # keccak256 asset identifier
   deterministic: Boolean! # true = CREATE2, false = CREATE
@@ -16,7 +16,7 @@ Entity 2 — VaultPosition
 Tracks per-user cumulative vault deposits/withdrawals (Deposit + Withdraw events on RWAVault).
 Updated on every deposit or withdrawal — one record per user per vault.
 """
-type VaultPosition @entity {
+type VaultPosition @entity(immutable: false) {
   id: ID! # vaultAddress-userAddress
   vault: Bytes! # RWAVault proxy address
   user: Bytes! # position holder
@@ -31,7 +31,7 @@ type VaultPosition @entity {
 Entity 3 — AmmSwap
 One record per swap executed through RWAAMM.
 """
-type AmmSwap @entity {
+type AmmSwap @entity(immutable: false) {
   id: ID! # txHash-logIndex
   amm: Bytes! # RWAAMM contract address
   sender: Bytes!
@@ -48,11 +48,12 @@ type AmmSwap @entity {
 Entity 4 — GovernanceProposal
 Full lifecycle of a DAO proposal: created → voted → queued → executed/defeated.
 """
-type GovernanceProposal @entity {
+type GovernanceProposal @entity(immutable: false) {
   id: ID! # proposalId as string
   proposalId: BigInt!
   proposer: Bytes!
   targets: [Bytes!]!
+  values: [BigInt!]!
   calldatas: [Bytes!]!
   description: String!
   voteStart: BigInt! # snapshot block
@@ -71,7 +72,7 @@ type GovernanceProposal @entity {
 """
 Sub-entity — ProposalVote (derived from VoteCast events, linked to GovernanceProposal).
 """
-type ProposalVote @entity {
+type ProposalVote @entity(immutable: false) {
   id: ID! # proposalId-voterAddress
   proposal: GovernanceProposal!
   voter: Bytes!

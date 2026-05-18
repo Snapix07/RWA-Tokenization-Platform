@@ -77,7 +77,6 @@ function VotesBar({
   );
 }
 
-// ── Карточка пропозала ────────────────────────────────────────────────────
 function ProposalCard({
   proposal,
   userAddress,
@@ -90,13 +89,10 @@ function ProposalCard({
 
   const proposalIdBig = BigInt(proposal.proposalId);
 
-  // targets/calldatas/values из subgraph — нужны для queue/execute
   const proposalTargets = (proposal.targets ?? []) as Address[];
   const proposalCalldatas = (proposal.calldatas ?? []) as `0x${string}`[];
-  // values не хранятся в subgraph — для этого протокола всегда 0
-  const proposalValues = proposalTargets.map(() => 0n);
+  const proposalValues = (proposal.values ?? []).map((v) => BigInt(v));
 
-  // Проверяем on-chain state (свежее чем subgraph)
   const { data: onChainState } = useReadContract({
     address: ADDRESSES.rwaGovernor,
     abi: RWA_GOVERNOR_ABI,
@@ -134,7 +130,6 @@ function ProposalCard({
 
   return (
     <div className="card" style={{ marginBottom: 14 }}>
-      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -161,19 +156,16 @@ function ProposalCard({
         </div>
       </div>
 
-      {/* Votes bar */}
       <VotesBar
         forV={proposal.forVotes}
         againstV={proposal.againstVotes}
         abstainV={proposal.abstainVotes}
       />
 
-      {/* Vote buttons — only when active and not voted */}
       {isActive && !hasVoted && userAddress && (
         <div style={{ marginTop: 14 }}>
           <hr className="divider" />
 
-          {/* Reason toggle */}
           <div style={{ marginBottom: 10 }}>
             <button
               className="btn btn-secondary"
@@ -267,7 +259,6 @@ function ProposalCard({
         </div>
       )}
 
-      {/* Queue button — state = 4 (Succeeded) */}
       {stateNum === 4 && userAddress && (
         <div style={{ marginTop: 14 }}>
           <hr className="divider" />
@@ -277,7 +268,7 @@ function ProposalCard({
           <TxButton
             label="Queue Proposal"
             loadingLabel="⏳ Queuing…"
-            successMessage="Proposal queued! Execute after the 2-day Timelock delay."
+            successMessage="Proposal queued! Execute after the 1-min Timelock delay."
             status={queueTx.status}
             isConfirming={queueTx.isConfirming}
             isConfirmed={queueTx.isConfirmed}
@@ -288,18 +279,18 @@ function ProposalCard({
                 proposalValues,
                 proposalCalldatas,
                 proposal.description,
+                proposal.proposalId,
               )
             }
           />
         </div>
       )}
 
-      {/* Execute button — state = 5 (Queued) */}
       {stateNum === 5 && userAddress && (
         <div style={{ marginTop: 14 }}>
           <hr className="divider" />
           <div style={{ fontSize: 13, color: "var(--text)", marginBottom: 4 }}>
-            Queued — execute after the 2-day Timelock delay.
+            Queued — execute after the 1-min Timelock delay.
           </div>
           {proposal.etaSeconds && (
             <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 8, opacity: 0.7 }}>
@@ -332,7 +323,6 @@ function ProposalCard({
         </div>
       )}
 
-      {/* Proposal ID */}
       <div style={{ marginTop: 10, fontSize: 11, color: "var(--text)", opacity: 0.5 }}>
         ID: {proposal.proposalId}
       </div>
@@ -340,7 +330,6 @@ function ProposalCard({
   );
 }
 
-// ── Форма создания пропозала ──────────────────────────────────────────────
 type ProposalAction = { target: string; value: string; calldata: string };
 
 function CreateProposalPanel({
@@ -393,7 +382,6 @@ function CreateProposalPanel({
     <div className="card" style={{ marginBottom: 24 }}>
       <div className="section-title">🏛️ Create Proposal</div>
 
-      {/* Threshold info */}
       <div
         style={{
           background: canPropose ? "var(--success-bg)" : "var(--warning-bg)",
@@ -410,7 +398,6 @@ function CreateProposalPanel({
           : `⚠️ Need ≥ ${fmt(threshold)} GOV voting power. You have ${fmt(votingPower ?? 0n)}.`}
       </div>
 
-      {/* Signal proposal hint */}
       <div
         style={{
           fontSize: 12,
@@ -426,7 +413,6 @@ function CreateProposalPanel({
         0, calldata = 0x.
       </div>
 
-      {/* Description */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-h)", marginBottom: 6 }}>
           Description *
@@ -440,7 +426,6 @@ function CreateProposalPanel({
         />
       </div>
 
-      {/* Actions */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-h)", marginBottom: 8 }}>
           Actions
@@ -478,7 +463,6 @@ function CreateProposalPanel({
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {/* Target */}
               <div style={{ flex: 3, minWidth: 220 }}>
                 <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 4 }}>
                   Target address *
@@ -496,7 +480,6 @@ function CreateProposalPanel({
                 />
               </div>
 
-              {/* Value */}
               <div style={{ flex: 1, minWidth: 90 }}>
                 <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 4 }}>
                   Value (wei)
@@ -510,7 +493,6 @@ function CreateProposalPanel({
                 />
               </div>
 
-              {/* Calldata */}
               <div style={{ flex: 4, minWidth: 220, width: "100%" }}>
                 <div style={{ fontSize: 11, color: "var(--text)", marginBottom: 4 }}>
                   Calldata (hex)
@@ -558,7 +540,6 @@ function CreateProposalPanel({
   );
 }
 
-// ── Главная страница ──────────────────────────────────────────────────────
 export function GovernancePage() {
   const { address, isConnected } = useAccount();
   const [delegateInput, setDelegateInput] = useState("");
@@ -567,7 +548,6 @@ export function GovernancePage() {
   const govData = useGovernanceData(address);
   const delegateTx = useDelegate();
 
-  // Subgraph: assetTokens (react-query + graphql-request, с Authorization header)
   const {
     data: assetsData,
     isLoading: subgraphFetching,
@@ -578,7 +558,6 @@ export function GovernancePage() {
     staleTime: 30_000,
   });
 
-  // Subgraph: governanceProposals (появятся как только будут созданы on-chain)
   const { data: proposalsData } = useQuery({
     queryKey: ["subgraph-proposals"],
     queryFn: () =>
@@ -625,12 +604,11 @@ export function GovernancePage() {
       <div className="page-header">
         <h1>Governance</h1>
         <p>
-          DAO governance — 4% quorum, 1% proposal threshold, 1-day delay, 1-week voting period,
-          2-day timelock.
+          DAO governance — 4% quorum, 1% proposal threshold, 1-min delay, 15-min voting period,
+          1-min timelock.
         </p>
       </div>
 
-      {/* GOV stats */}
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <div className="card">
           <div className="card__title">GOV Balance</div>
@@ -661,7 +639,6 @@ export function GovernancePage() {
         </div>
       </div>
 
-      {/* Delegation */}
       <div className="card" style={{ marginBottom: 24 }}>
         <div className="section-title">🗳️ Delegation</div>
 
@@ -682,7 +659,6 @@ export function GovernancePage() {
         )}
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          {/* Self-delegate */}
           <div style={{ flex: 1, minWidth: 200 }}>
             <TxButton
               label="Delegate to Myself"
@@ -701,7 +677,6 @@ export function GovernancePage() {
             )}
           </div>
 
-          {/* Custom delegate */}
           <div style={{ flex: 2, minWidth: 280, display: "flex", flexDirection: "column", gap: 8 }}>
             <input
               className="input-field"
@@ -722,7 +697,6 @@ export function GovernancePage() {
         </div>
       </div>
 
-      {/* ── Registered Assets — from The Graph ───────────────────────── */}
       <div
         style={{
           marginBottom: 16,
@@ -800,7 +774,6 @@ export function GovernancePage() {
         </div>
       )}
 
-      {/* ── Proposals list ────────────────────────────────────────────── */}
       <div
         style={{
           marginBottom: 16,
@@ -846,7 +819,6 @@ export function GovernancePage() {
         <ProposalCard key={p.id} proposal={p} userAddress={address} />
       ))}
 
-      {/* Links */}
       <div style={{ marginTop: 16, fontSize: 13, color: "var(--text)", display: "flex", gap: 20 }}>
         <a
           href={`https://sepolia.arbiscan.io/address/${ADDRESSES.rwaGovernor}`}

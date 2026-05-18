@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {IChainlinkAggregator} from "./interfaces/IChainlinkAggregator.sol";
+import {IChainlinkOracleAdapter} from "./interfaces/IChainlinkOracleAdapter.sol";
 import {InvalidAsset, OracleFeedUpdated, StalePrice, ZeroAddress} from "./interfaces/IRWATypes.sol";
 
 /// @title ChainlinkOracleAdapter
@@ -11,7 +12,7 @@ import {InvalidAsset, OracleFeedUpdated, StalePrice, ZeroAddress} from "./interf
 ///         normalization. Acts as the single oracle interface for all platform contracts.
 ///
 /// Design patterns: OracleAdapter (interface abstraction), Pausable (circuit breaker).
-contract ChainlinkOracleAdapter is Ownable, Pausable {
+contract ChainlinkOracleAdapter is IChainlinkOracleAdapter, Ownable, Pausable {
     // -------------------------------------------------------------------------
     // Storage
     // -------------------------------------------------------------------------
@@ -80,7 +81,7 @@ contract ChainlinkOracleAdapter is Ownable, Pausable {
 
         // Checks: validate answer and staleness before any state reads
         if (answer <= 0) revert InvalidAsset(assetId);
-        // forge-lint: disable-next-line(block-timestamp)
+        //slither-disable-next-line timestamp
         if (block.timestamp - ts > cfg.maxStaleness) revert StalePrice(ts, cfg.maxStaleness);
 
         uint8 feedDecimals = IChainlinkAggregator(cfg.feed).decimals();
@@ -123,6 +124,7 @@ contract ChainlinkOracleAdapter is Ownable, Pausable {
 
     /// @dev Benchmark baseline — pure-Solidity equivalent of _normalizePriceAssembly.
     ///      Kept alongside the assembly version for the gas report; not called in production.
+    //slither-disable-next-line dead-code
     function _normalizePriceSolidity(int256 answer, uint8 feedDecimals) internal pure returns (uint256) {
         if (feedDecimals < 18) {
             // casting to uint256 is safe: caller validates answer > 0 before this call

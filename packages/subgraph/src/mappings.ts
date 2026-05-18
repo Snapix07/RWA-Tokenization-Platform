@@ -113,6 +113,7 @@ export function handleProposalCreated(event: ProposalCreatedEvent): void {
   proposal.proposalId = event.params.proposalId;
   proposal.proposer = event.params.proposer;
   proposal.targets = changetype<Bytes[]>(event.params.targets);
+  proposal.values = event.params.values;
   proposal.calldatas = event.params.calldatas;
   proposal.description = event.params.description;
   proposal.voteStart = event.params.voteStart;

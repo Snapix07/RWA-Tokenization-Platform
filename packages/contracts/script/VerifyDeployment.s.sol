@@ -38,15 +38,15 @@ contract VerifyDeployment is Script {
         console2.log("=== RWA Platform Post-Deployment Verification ===\n");
 
         // ── Timelock ──────────────────────────────────────────────────────────
-        _check("Timelock min delay >= 2 days", timelock.getMinDelay() >= 2 days);
+        _check("Timelock min delay >= 1 min", timelock.getMinDelay() >= 1 minutes);
         _check("Deployer has renounced TIMELOCK_ADMIN_ROLE", !timelock.hasRole(timelock.DEFAULT_ADMIN_ROLE(), deployer));
         _check("Governor holds PROPOSER_ROLE on Timelock", timelock.hasRole(timelock.PROPOSER_ROLE(), governorAddr));
         _check("Governor holds CANCELLER_ROLE on Timelock", timelock.hasRole(timelock.CANCELLER_ROLE(), governorAddr));
         _check("Anyone can execute (EXECUTOR_ROLE open)", timelock.hasRole(timelock.EXECUTOR_ROLE(), address(0)));
 
         // ── Governor ─────────────────────────────────────────────────────────
-        _check("Governor votingDelay = 43 200 blocks (~1 day)", governor.votingDelay() == 43_200);
-        _check("Governor votingPeriod = 302 400 blocks (~1 week)", governor.votingPeriod() == 302_400);
+        _check("Governor votingDelay = 60 s (1 min)", governor.votingDelay() == 60);
+        _check("Governor votingPeriod = 900 s (15 min)", governor.votingPeriod() == 900);
         _check("Governor quorum fraction = 4%", governor.quorumNumerator() == 4);
 
         // ── Access control on managed contracts ───────────────────────────────
